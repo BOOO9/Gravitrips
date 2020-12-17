@@ -8,76 +8,76 @@
 
 void error(char *msg)
 {
-perror(msg);
-exit(1);
+    perror(msg);
+    exit(1);
 }
 
 int main(int argc, char *argv[])
 {
 
-printf("start");
+    printf("start");
 
+    int sockfd, newsockfd, portno, clilen;
+    char buffer[256];
+    struct sockaddr_in serv_addr, cli_addr;
+    int n;
+    
+    // if Port No is not correct
+    if (argc < 2)
+    {
+        fprintf(stderr,"ERROR, no port provided\n");
+        exit(1);
+    }
 
-int sockfd, newsockfd, portno, clilen;
-char buffer[256];
-struct sockaddr_in serv_addr, cli_addr;
-int n;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-if (argc < 2)
-{
-fprintf(stderr,"ERROR, no port provided\n");
-exit(1);
-}
+    if (sockfd < 0)
+    {
+        error("ERROR opening socket");
+    }
 
-sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    bzero((char *) &serv_addr, sizeof(serv_addr));
 
-if (sockfd < 0)
-{
-error("ERROR opening socket");
-}
+    portno = atoi(argv[1]);
 
-bzero((char *) &serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(portno);
 
-portno = atoi(argv[1]);
+    if (bind(sockfd, (struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
+    {
+        error("ERROR on binding");
+    }
 
-serv_addr.sin_family = AF_INET;
-serv_addr.sin_addr.s_addr = INADDR_ANY;
-serv_addr.sin_port = htons(portno);
+    printf("\n%d\n", portno);
 
-if (bind(sockfd, (struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
-{
-error("ERROR on binding");
-}
+    listen(sockfd,5);
+    clilen = sizeof(cli_addr);
 
-printf("\n%d\n", portno);
+    newsockfd = accept(sockfd,(struct sockaddr *) &cli_addr, &clilen);
 
-listen(sockfd,5);
-clilen = sizeof(cli_addr);
+    if (newsockfd < 0)
+    {
+        error("ERROR on accept");
+    }
 
-newsockfd = accept(sockfd,(struct sockaddr *) &cli_addr, &clilen);
+    bzero(buffer,256);
 
-if (newsockfd < 0)
-{
-error("ERROR on accept");
-}
+    n = read(newsockfd,buffer,255);
 
-bzero(buffer,256);
+    if (n < 0)
+    {
+        error("ERROR reading from socket");
+    }
 
-n = read(newsockfd,buffer,255);
+    printf("Here is the message: %s\n",buffer);
 
-if (n < 0)
-{
-error("ERROR reading from socket");
-}
+    n = write(newsockfd,"I got your message",18);
 
-printf("Here is the message: %s\n",buffer);
-
-n = write(newsockfd,"I got your message",18);
-
-if (n < 0)
-{
-error("ERROR writing to socket");
-}
-return 0;
+    if (n < 0)
+    {
+        error("ERROR writing to socket");
+    }
+    return 0;
 }
 
