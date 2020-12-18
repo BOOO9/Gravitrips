@@ -1,6 +1,7 @@
 #Ignore Directories
-#Research/
+
 Research/Files
+
 
 # Prerequisites
 *.d

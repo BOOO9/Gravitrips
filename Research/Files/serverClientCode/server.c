@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    //creats socket to socket file descriptor
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (sockfd < 0)
@@ -36,6 +37,7 @@ int main(int argc, char *argv[])
         error("ERROR opening socket");
     }
 
+    //erases the data in the serv_adr sruct
     bzero((char *) &serv_addr, sizeof(serv_addr));
 
     portno = atoi(argv[1]);
