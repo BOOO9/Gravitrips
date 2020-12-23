@@ -1,6 +1,15 @@
 /******************************
  * vier.c    "4 gewinnt" Spiel
  ******************************/
+
+/*Verbessern:
+ *
+ * Spielfeld wird immer "gecleart"
+ * CHCECK Spielfeld mit seitlichen Strichen 
+ *
+ */
+
+
 #include <stdio.h>
 #include <string.h>
  
@@ -14,7 +23,8 @@
  *           'O' = Vierer-Reihe Spieler 1
  *           'X' = Vierer-Reihe Spieler 2  
 */
-char Dots[] = {' ', 'o', 'x', 'O', 'X'};
+
+char Dots[] = {' ', 'O', 'X', '4', '4'};
  
 /*  Spielmatrix: 0 = freies Feld
  *    (Grid)     1 = Stein Spieler 1
@@ -22,47 +32,70 @@ char Dots[] = {' ', 'o', 'x', 'O', 'X'};
  *               3 = Vierer-Reihe Spieler 1
  *               4 = Vierer-Reihe Spieler 2  
 */
+
 int Grid[ROWS][COLS];
  
 /*** functions ***/
  
-// Spielbrett anzeigen
-void show_grid(void) {
-  int i,j;
- 
-  PRLF;
-  printf("%s   ", INDENT);
-  for (j=1; j<=COLS; j++)
-     printf("%d ", j);
-  PRLF;
-  for (i=0; i<ROWS; i++) {
-    printf("%s%d  ", INDENT, i+1);
-    for (j=0; j<COLS; j++)
-      printf("%c ", Dots[Grid[i][j]]);
+// Show Grid
+void show_grid(void) 
+{
+    int i,j;
+
     PRLF;
-  }
-  PRLF;
+    
+    printf("%s   ", INDENT);
+    
+    for (j = 1; j <= COLS; j++)
+        printf("|%d", j);
+    
+    printf("|");
+
+    //printf("\n%s  ----------------", INDENT);
+
+    PRLF;
+    
+    for (i = 0; i < ROWS; i++) 
+    {
+        
+        printf("%s%d  ", INDENT, i+1);
+
+        for (j = 0; j < COLS; j++)
+            printf("|%c", Dots[Grid[i][j]]);
+
+        printf("|");
+        PRLF;
+
+    }
+
+    PRLF;
 }
- 
+
 // Spielstein in Spalte versenken
-int drop_disc(int gamer, int column) {
-  int row;
-   
-  for (row=0; row<ROWS; row++)
-    if (Grid[row][column-1] > 0)
-      break;
-  if (row == 0)
-    return 0;
-  Grid[row-1][column-1] = gamer;
-  return 1;
+int drop_disc(int gamer, int column) 
+{
+    int row;
+
+    for (row=0; row<ROWS; row++)
+    {
+        if (Grid[row][column-1] > 0) break;
+    }
+
+    if (row == 0) return 0;
+
+    Grid[row-1][column-1] = gamer;
+
+    return 1;
 }   
- 
+
 // Vierer-Reihe markieren
-void mark_four(int rs, int cs, int dr, int dc) {
-  int i;
-   
-  for (i=0; i<4; i++)
-    Grid[rs+i*dr][cs+i*dc] += 2;
+void mark_four(int rs, int cs, int dr, int dc)
+{
+    int i;
+
+    for (i=0; i<4; i++) 
+        Grid[rs+i*dr][cs+i*dc] += 2;
+
 }
  
 // Vierer-Reihe suchen
@@ -121,35 +154,49 @@ int get_column(int gamer) {
 }
      
 /*** main ***/
-int main(void) {
+int main(void) 
+{
     int discs = (ROWS * COLS);
     int column, gamer, winner;
- 
+
     printf("%sSpieler 1: '%c'\n", INDENT, Dots[1]);
     printf("%sSpieler 2: '%c'\n", INDENT, Dots[2]);
+
     memset(Grid, 0, sizeof(Grid));
+    printf("\e[1;1H\e[2J"); 
     show_grid();
+
     gamer = 1;
-    while (1) {
+
+    while (1) 
+    {
         column = get_column(gamer);
-        if (drop_disc(gamer, column))
-          discs--;
-        else { 
-          printf("Kein freier Platz in Spalte %d.\n", column);
-          continue;
+
+        if (drop_disc(gamer, column)) discs--;
+        else 
+        { 
+            printf("Kein freier Platz in Spalte %d.\n", column);
+            continue;
         }
+
         winner = search_four(gamer);
+        printf("\e[1;1H\e[2J"); 
         show_grid();
-        if (winner > 0) {
-          printf("Gewinner ist Spieler %d.\n", winner);
-          break;
-        }  
-        if (discs == 0) {
-          printf("Alle Steine sind gesetzt.\n");
-          break;
+        
+        if (winner > 0) 
+        {
+            printf("Gewinner ist Spieler %d.\n", winner);
+            break;
         }
+
+        if (discs == 0) 
+        {
+            printf("Alle Steine sind gesetzt.\n");
+            break;
+        }
+
         gamer = gamer%2+1;
     }
     printf("%s**GAME OVER**\n", INDENT);
     return 0;
-}
+} 
