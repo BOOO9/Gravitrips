@@ -45,7 +45,7 @@ int Grid[ROWS][COLS];
 void show_grid(void);
 int drop_disc(int player, int column);
 void mark_four(int rs, int cs, int dr, int dc);
-int search_four(int player);
+int search_winner(int player);
 int get_input_col(int player); 
 
 int main(void) 
@@ -58,6 +58,7 @@ int main(void)
     
     //clears screen
     printf("\e[1;1H\e[2J"); 
+
 
     show_grid();
 
@@ -74,7 +75,7 @@ int main(void)
             continue;
         }
 
-        winner = search_four(player);
+        winner = search_winner(player);
 
         printf("\e[1;1H\e[2J"); 
 
@@ -161,7 +162,7 @@ void mark_four(int rs, int cs, int dr, int dc)
 }
  
 // Vierer-Reihe suchen
-int search_four(int player) 
+int search_winner(int player) 
 {
     int i, j;
      
