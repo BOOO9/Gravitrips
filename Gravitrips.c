@@ -4,14 +4,18 @@
 
 /*Verbessern:
  *
- * Spielfeld wird immer "gecleart"
- * CHCECK Spielfeld mit seitlichen Strichen 
+ * Error checker für Eingabe
+ * 
  *
  */
 
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
  
 #define ROWS 6
 #define COLS 7
@@ -38,7 +42,63 @@ int Grid[ROWS][COLS];
 //               4 = Vierer-Reihe Spieler 2  
 
 
-/*** functions ***/
+void show_grid(void);
+int drop_disc(int player, int column);
+void mark_four(int rs, int cs, int dr, int dc);
+int search_four(int player);
+int get_input_col(int player); 
+
+int main(void) 
+{
+    int discs = (ROWS * COLS);
+    int column, player, winner;
+    
+    //set whole Grid on 0
+    memset(Grid, 0, sizeof(Grid));
+    
+    //clears screen
+    printf("\e[1;1H\e[2J"); 
+
+    show_grid();
+
+    player = 1;
+
+    while (discs > 0) 
+    {
+        column = get_input_col(player);
+
+        if (drop_disc(player, column) == 1) discs--;
+        else 
+        { 
+            printf("Kein freier Platz in Spalte %d.\n", column);
+            continue;
+        }
+
+        winner = search_four(player);
+
+        printf("\e[1;1H\e[2J"); 
+
+        show_grid();
+        
+        if (winner > 0) 
+        {
+            printf("Gewinner ist Spieler %d (%c). \n", winner, Symbols[player]);
+            break;
+        }
+
+        player = player%2+1;
+    }
+     
+
+    if(discs == 0) printf("Das Spielfeld ist voll!\n  Unentschieden!\n");
+        
+    printf("%sGAME OVER\n", INDENT);
+    return 0;
+}
+
+
+
+/* Functions */
  
 // Show Grid
 void show_grid(void) 
@@ -74,8 +134,8 @@ void show_grid(void)
     PRLF;
 }
 
-// Spielstein in Spalte versenken
-int drop_disc(int gamer, int column) 
+// Returns 0 if col is full
+int drop_disc(int player, int column) 
 {
     int row;
 
@@ -86,7 +146,7 @@ int drop_disc(int gamer, int column)
 
     if (row == 0) return 0;
 
-    Grid[row-1][column-1] = gamer;
+    Grid[row-1][column-1] = player;
 
     return 1;
 }   
@@ -98,11 +158,10 @@ void mark_four(int rs, int cs, int dr, int dc)
 
     for (i=0; i<4; i++) 
         Grid[rs+i*dr][cs+i*dc] += 2;
-
 }
  
 // Vierer-Reihe suchen
-int search_four(int gamer) 
+int search_four(int player) 
 {
     int i, j;
      
@@ -111,10 +170,10 @@ int search_four(int gamer)
     {
         for (j = 0; j < COLS - 3; j++)
         {
-            if (Grid[i][j] == gamer && Grid[i][j+1] == gamer && Grid[i][j+2] == gamer && Grid[i][j+3] == gamer ) 
+            if (Grid[i][j] == player && Grid[i][j+1] == player && Grid[i][j+2] == player && Grid[i][j+3] == player ) 
             {
                 mark_four(i, j, 0, +1);
-                return gamer; 
+                return player; 
             }
         }
     }
@@ -124,10 +183,10 @@ int search_four(int gamer)
     {    
         for (i=0; i<ROWS-3; i++)
         {
-            if (Grid[i][j]   == gamer && Grid[i+1][j] == gamer && Grid[i+2][j] == gamer && Grid[i+3][j] == gamer ) 
+            if (Grid[i][j]   == player && Grid[i+1][j] == player && Grid[i+2][j] == player && Grid[i+3][j] == player ) 
             {
                 mark_four(i, j, +1, 0);
-                return gamer; 
+                return player; 
             }
         }
     }
@@ -137,10 +196,10 @@ int search_four(int gamer)
     {
         for(j=0; j<COLS-3; j++)
         {
-            if(Grid[i][j] == gamer && Grid[i+1][j+1] == gamer && Grid[i+2][j+2] == gamer && Grid[i+3][j+3] == gamer )
+            if(Grid[i][j] == player && Grid[i+1][j+1] == player && Grid[i+2][j+2] == player && Grid[i+3][j+3] == player )
             {
                 mark_four(i, j, +1, +1);
-                return gamer; 
+                return player; 
             }
         }
     }
@@ -150,10 +209,10 @@ int search_four(int gamer)
     {
         for (j=COLS-4; j<COLS; j++)
         {
-            if (Grid[i][j] == gamer && Grid[i+1][j-1] == gamer && Grid[i+2][j-2] == gamer && Grid[i+3][j-3] == gamer)
+            if (Grid[i][j] == player && Grid[i+1][j-1] == player && Grid[i+2][j-2] == player && Grid[i+3][j-3] == player)
             {
                 mark_four(i, j, +1, -1);
-                return gamer;
+                return player;
             }
         }
     }
@@ -162,66 +221,21 @@ int search_four(int gamer)
 }
  
 // Spaltennummer vom Spieler abfragen
-int get_input_col(int gamer) 
+int get_input_col(int player) 
 {
     int column;
-    int input_valid = 0;
+    int input_valid = 1;
      
-    while (!input_valid) 
+    while (input_valid == 1) 
     {
-        printf("Spieler %d ('%c') setzt Spalte (1-%d): ", gamer, Symbols[gamer], COLS);
+        printf("Spieler %d ('%c') setzt Spalte (1-%d): ", player, Symbols[player], COLS);
         scanf("%d", &column);
+        
         if (column < 1 || column > COLS)
             printf("Ungültige Spaltennummer.\n"); 
         else
-            input_valid = 1;
+            input_valid = 0; 
     }
     return column;
 }
-     
-/*** main ***/
-int main(void) 
-{
-    int discs = (ROWS * COLS);
-    int column, gamer, winner;
 
-    memset(Grid, 0, sizeof(Grid));
-
-    printf("\e[1;1H\e[2J"); 
-
-    show_grid();
-
-    gamer = 1;
-
-    while (discs > 0) 
-    {
-        column = get_input_col(gamer);
-
-        if (drop_disc(gamer, column)) discs--;
-        else 
-        { 
-            printf("Kein freier Platz in Spalte %d.\n", column);
-            continue;
-        }
-
-        winner = search_four(gamer);
-
-        printf("\e[1;1H\e[2J"); 
-
-        show_grid();
-        
-        if (winner > 0) 
-        {
-            printf("Gewinner ist Spieler %d (%c). \n", winner, Symbols[gamer]);
-            break;
-        }
-
-        gamer = gamer%2+1;
-    }
-     
-
-    if(discs == 0) printf("Das Spielfeld ist voll!\n  Unentschieden!\n");
-        
-    printf("%sGAME OVER\n", INDENT);
-    return 0;
-} 
