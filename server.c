@@ -15,11 +15,11 @@
 
 #define BUF 1024
 #define MAX_USER 20
-#define MAX_GAMEROOM 5
+#define MAX_GAMEROOM 8
 #define ROWS 6
 #define COLUMNS 7
 
-int a = 2;
+#define a 3
 
 typedef struct
 {
@@ -29,7 +29,7 @@ typedef struct
 	int room; //sagt welcher gameroom
 	int player_nmbr_room; //sagt zuschauer od spieler (und ob x od 0)
 
-} player_t;
+}player_t;
 
 player_t players[MAX_USER];
 
@@ -41,7 +41,8 @@ typedef struct
 
 }gameroom_t;
 
-gameroom_t gameroom[MAX_GAMEROOM];
+
+gameroom_t gameroom[8];
 
 pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -59,9 +60,9 @@ int start_server(int port);
 
 int main(int argc, char **argv)
 {
-  for(int i = 0; i<= MAX_USER; i++) players[i].player_nmbr = -1;
+  for(int i = 0; i <= MAX_USER; i++) players[i].player_nmbr = -1;
 
-  for(int i = 0; i<MAX_GAMEROOM; i++)
+  for(int i = 0; i < MAX_GAMEROOM; i++)
   {
     for (int j = 0; j < ROWS; j++)
     {
@@ -71,7 +72,7 @@ int main(int argc, char **argv)
       }
     }
   }
-
+  
   user_count = 0;
   progname = argv[0];
   if (argc < 2) usage();
@@ -93,23 +94,32 @@ void setToken(char board[ROWS][COLUMNS], char field[])
   printf("FIELD string: %s\n", field);
 
 
-  int set =  atoi(field);
+  int set = atoi(field);
   set--;
 
   printf("FIELD int: %d\n", set);
 
 
-  while (gameroom[a].gameboard[row][set] == ' ') row++;
+  for(row = 0; row < ROWS; row++)
+  {  
+    if(gameroom[a].gameboard[row][set] == 'X') break;
+  }
 
   gameroom[a].gameboard[row - 1][set] = 'X';
 
-
-for(int i=0; i<6; i++)
-{
-  for(int j = 0; j<7; j++) printf("%c",gameroom[a].gameboard[i][j]);
-}
-
-}
+  for(int i = 0; i < MAX_GAMEROOM; i++)
+  {
+    for (int j = 0; j < ROWS; j++)
+    {
+      for (int k = 0; k < COLUMNS; k++)
+      {
+        printf("%c", gameroom[i].gameboard[j][k]);
+      }
+      printf("\n");
+    }
+    printf("Nr.: %d\n\n",i);
+  }
+} 
 
 void error_exit(const char *msg)
 {
@@ -157,7 +167,7 @@ void *handle_client(void *arg)
     {
       if(strcmp(buffer, "quit\n") == 0)	break;
 
-	printf("MESSAGE: %s\n",message);
+	    printf("MESSAGE: %s\n",message);
 
       setToken(gameroom[a].gameboard, message);
 

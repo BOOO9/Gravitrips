@@ -22,10 +22,10 @@
 #define INDENT "    "
 #define PRLF   printf("\n")
  
-/*  Symbole: 'o' = Stein Spieler 1
- *           'x' = Stein Spieler 2  
- *           'O' = Vierer-Reihe Spieler 1
- *           'X' = Vierer-Reihe Spieler 2  
+/*  Symbole: 'O' = Stein Spieler 1
+ *           'X' = Stein Spieler 2  
+ *           '4' = Vierer-Reihe Spieler 1
+ *           '4' = Vierer-Reihe Spieler 2  
 */
 
 char Symbols[] = {' ', 'O', 'X', '4', '4'};
