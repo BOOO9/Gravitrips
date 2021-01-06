@@ -16,6 +16,7 @@
 
 #define BUF 1024
 
+int state = 0; //defines what to do (0 = menue, 1 = in game as player, in game as viewer)
 int run = 1;
 char *progname;
 
@@ -24,6 +25,11 @@ void error_exit(const char *msg);
 void usage();
 void *send_mesg(void *arg);
 void *recive_mesg(void* arg);
+void menue();// TODO
+void game();// TODO
+void get_user_input_to_server(char* buffer, FILE* server_sockfile);// TODO
+
+
 
 /* main */
 int main(int argc, char **argv)
@@ -79,7 +85,7 @@ int main(int argc, char **argv)
 	  error_exit("msg thread failed");
   }
 
-  while(run);
+  while(run);// sleep(2);
 
   return EXIT_SUCCESS;
 }
@@ -87,24 +93,6 @@ int main(int argc, char **argv)
 
 /*functions*/
 
-void printBoard(char board[6][7])
-{
-//  printf("\e[1;1H\e[2J");
-
-  printf("  1 2 3 4 5 6 7\n");
-  printf(" ---------------\n");
-
-  for (int i = 0; i < 6; i++)
-  {
-    printf("%d", i + 1);
-
-    for (int j = 0; j < 7; j++) printf("|%c", board[i][j]);
-
-    printf("|\n");
-  }
-
-  printf(" ---------------\n\n");
-}
 
 void error_exit(const char *msg)
 {
@@ -127,12 +115,26 @@ void *send_mesg(void *arg)
   char buffer[100];
   char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
 
+  sleep(1);
+
   while(1)
   {
-    fgets(buffer, BUF, stdin);
-    fputs(buffer, server_sockfile);
-    fflush(server_sockfile);
-    printf("\nwrote to server: %s\n", buffer);
+    switch(state)
+    {
+      case 0:
+        get_user_input_to_server(buffer, server_sockfile);
+        if(atoi(buffer) > 0) state = 1; //TODO idea: check if room is full, to get right state
+        break;
+      case 1:
+        get_user_input_to_server(buffer, server_sockfile);
+        break;
+      case 2:
+        scanf("%d", &state);
+        break;
+    }
+
+
+
 
     if(strcmp(buffer, "quit\n") == 0) break;
 
@@ -157,8 +159,24 @@ void *recive_mesg(void* arg)
   while(1)
   {
 
-	  fread(board, sizeof(char), sizeof(board),server_sockfile);
-	  printBoard(board);
+//    sleep(1);
+    switch(state)
+    {
+      case 0:
+        menue();
+        fread(buffer, sizeof(char), sizeof(board), server_sockfile);
+        break;
+      case 1:
+        fread(board, sizeof(char), sizeof(board), server_sockfile);
+        printf("you are a player\n");
+        printBoard(board);
+        break;
+      case 2:
+        fread(board, sizeof(char), sizeof(board), server_sockfile);
+        printf("you are a viewer, press 0 to leave\n\n");
+        printBoard(board);
+        break;
+    }
 
 //	  fgets(buffer, BUF, server_sockfile);
 //	  printf("\ngot from server: %s", buffer);
@@ -170,3 +188,40 @@ void *recive_mesg(void* arg)
 }
 
 
+
+void menue()
+{
+  printf("\e[1;1H\e[2J");
+  printf("menue, choose room: ");
+}
+
+
+void printBoard(char board[6][7])
+{
+  printf("\e[1;1H\e[2J");
+
+  printf("  1 2 3 4 5 6 7\n");
+  printf(" ---------------\n");
+
+  for (int i = 0; i < 6; i++)
+  {
+    printf("%d", i + 1);
+
+    for (int j = 0; j < 7; j++) printf("|%c", board[i][j]);
+
+    printf("|\n");
+  }
+
+  printf(" ---------------\n\n");
+}
+
+
+
+
+void get_user_input_to_server(char* buffer, FILE* server_sockfile)
+{
+  fgets(buffer, BUF, stdin);
+  fputs(buffer, server_sockfile);
+  fflush(server_sockfile);
+  printf("\nwrote to server: %s\n", buffer);
+}
