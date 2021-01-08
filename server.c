@@ -26,8 +26,8 @@ typedef struct
 	int sockfd;
 	int player_nmbr;  //checkt loggin
 	FILE *client_sockfile;
-	int room; //sagt welcher gameroom
-	int player_nmbr_room; //sagt zuschauer od spieler (und ob x od 0)
+	int room; //tells which room, 0 = no room
+	int player_nmbr_room; //tells which (X or O player or viewer
 
 }player_t;
 
@@ -41,38 +41,39 @@ typedef struct
 
 }gameroom_t;
 
+gameroom_t gameroom[MAX_GAMEROOM];
 
-gameroom_t gameroom[8];
 
 pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 
 char *progname;
 int user_count;
 
-void setToken(char board[ROWS][COLUMNS], char field[]);
+void clear_gameboard(int nmbr);  //nmbr = which board to clear
+void setToken(char field[], int room_nmbr);
 void error_exit(const char *msg);
 void usage();
 void *handle_client(void *arg);
 int start_server(int port);
-
+void get_userinput(char buffer[], char* message, FILE* client_sockfile);
 
 /*main*/
 
 int main(int argc, char **argv)
 {
-  for(int i = 0; i <= MAX_USER; i++) players[i].player_nmbr = -1;
+  for(int i = 0; i <= MAX_USER; i++)
+  {
+    players[i].player_nmbr = -1;
+    players[i].room = 0;
+  }
+
 
   for(int i = 0; i < MAX_GAMEROOM; i++)
   {
-    for (int j = 0; j < ROWS; j++)
-    {
-      for (int k = 0; k < COLUMNS; k++)
-      {
-        gameroom[i].gameboard[j][k] = ' ';
-      }
-    }
+    clear_gameboard(i);
   }
-  
+
   user_count = 0;
   progname = argv[0];
   if (argc < 2) usage();
@@ -87,7 +88,7 @@ int main(int argc, char **argv)
 
 /*functions*/
 
-void setToken(char board[ROWS][COLUMNS], char field[])
+void setToken(char field[], int room_nmbr)
 {
   int row = 0;
 
@@ -101,11 +102,11 @@ void setToken(char board[ROWS][COLUMNS], char field[])
 
 
   for(row = 0; row < ROWS; row++)
-  {  
-    if(gameroom[a].gameboard[row][set] == 'X') break;
+  {
+    if(gameroom[room_nmbr].gameboard[row][set] == 'X') break;
   }
 
-  gameroom[a].gameboard[row - 1][set] = 'X';
+  gameroom[room_nmbr].gameboard[row - 1][set] = 'X';
 
   for(int i = 0; i < MAX_GAMEROOM; i++)
   {
@@ -119,7 +120,8 @@ void setToken(char board[ROWS][COLUMNS], char field[])
     }
     printf("Nr.: %d\n\n",i);
   }
-} 
+
+}
 
 void error_exit(const char *msg)
 {
@@ -133,11 +135,16 @@ void usage()
   exit(EXIT_FAILURE);
 }
 
+
+
+
 void *handle_client(void *arg)
 {
   int sockfd = *((int *)arg);
 
   int cur;
+  int cur_room = 0;
+
 
   for(int i = 1; i < MAX_USER; i++)
   {
@@ -156,30 +163,50 @@ void *handle_client(void *arg)
 
   players[cur].client_sockfile = fdopen(players[cur].sockfd , "r+");
 
+  char buffer[100];
+  char *message;
+
+
+
+
+//  players[cur].room = a;
 
   while(1)
   {
-    char buffer[100];
-
-    char *message = fgets(buffer, sizeof(buffer), client_sockfile);
-
-    if (message != NULL)
+    if(players[cur].room == 0) //player is in no room, send him room options
     {
-      if(strcmp(buffer, "quit\n") == 0)	break;
+      fwrite(gameroom[cur].gameboard, sizeof(char), sizeof(gameroom[cur].gameboard), players[cur].client_sockfile);
+      fflush(players[cur].client_sockfile);
 
-	    printf("MESSAGE: %s\n",message);
+      message = fgets(buffer, sizeof(buffer), client_sockfile);
+      cur_room = atoi(message);
+      players[cur].room = cur_room;
 
-      setToken(gameroom[a].gameboard, message);
+    }else{ //player is in room, send board
+
+//      get_userinput(buffer, message, client_sockfile);
+
+      message = fgets(buffer, sizeof(buffer), client_sockfile);
+
+      if (message == NULL)
+      {
+        error_exit("userinputt NULL");
+      }
+
+
+      if(strcmp(buffer, "quit\n") == 0) break;
+
+      setToken(message, cur_room);
 
       for(int i = 1; i <= MAX_USER; i++)
       {
-        if(players[i].player_nmbr > 0)
+        if(players[i].player_nmbr > 0 && players[i].room == cur_room)
         {
           printf("PRINT TO %d: \n", i);
 //          fputs(message, players[i].client_sockfile);
 //          fflush(players[i].client_sockfile);
 
-	  fwrite(gameroom[a].gameboard, sizeof(char), sizeof(gameroom[a].gameboard), players[i].client_sockfile);
+          fwrite(gameroom[cur_room].gameboard, sizeof(char), sizeof(gameroom[cur_room].gameboard), players[i].client_sockfile);
           fflush(players[i].client_sockfile);
           printf("got it\n");
         }
@@ -197,6 +224,13 @@ void *handle_client(void *arg)
 
   fclose(players[cur].client_sockfile);
 }
+
+
+void get_userinput(char buffer[100], char* message, FILE* client_sockfile)
+{
+}
+
+
 
 int start_server(int port)
 {
@@ -253,8 +287,22 @@ int start_server(int port)
     }
     else error_exit("accept client");      // TODO
 
+  sleep(1);
   }
   close(server_sockfd);
+}
+
+
+
+void clear_gameboard(int nmbr)
+{
+    for (int j = 0; j < ROWS; j++)
+    {
+      for (int k = 0; k < COLUMNS; k++)
+      {
+        gameroom[nmbr].gameboard[j][k] = ' ';
+      }
+    }
 }
 
 
