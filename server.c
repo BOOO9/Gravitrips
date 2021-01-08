@@ -108,19 +108,6 @@ void setToken(char field[], int room_nmbr)
 
   gameroom[room_nmbr].gameboard[row - 1][set] = 'X';
 
-  for(int i = 0; i < MAX_GAMEROOM; i++)
-  {
-    for (int j = 0; j < ROWS; j++)
-    {
-      for (int k = 0; k < COLUMNS; k++)
-      {
-        printf("%c", gameroom[i].gameboard[j][k]);
-      }
-      printf("\n");
-    }
-    printf("Nr.: %d\n\n",i);
-  }
-
 }
 
 void error_exit(const char *msg)
@@ -134,7 +121,6 @@ void usage()
   fprintf(stderr, "Usage: %s port\n", progname);
   exit(EXIT_FAILURE);
 }
-
 
 
 
@@ -165,12 +151,10 @@ void *handle_client(void *arg)
 
   char buffer[100];
   char *message;
-
-
-
-
-//  players[cur].room = a;
-
+  
+    
+  //  players[cur].room = a;
+  
   while(1)
   {
     if(players[cur].room == 0) //player is in no room, send him room options
@@ -183,9 +167,9 @@ void *handle_client(void *arg)
       players[cur].room = cur_room;
 
     }else{ //player is in room, send board
-
-//      get_userinput(buffer, message, client_sockfile);
-
+    
+  //      get_userinput(buffer, message, client_sockfile);
+  
       message = fgets(buffer, sizeof(buffer), client_sockfile);
 
       if (message == NULL)
@@ -203,9 +187,9 @@ void *handle_client(void *arg)
         if(players[i].player_nmbr > 0 && players[i].room == cur_room)
         {
           printf("PRINT TO %d: \n", i);
-//          fputs(message, players[i].client_sockfile);
-//          fflush(players[i].client_sockfile);
-
+  //          fputs(message, players[i].client_sockfile);
+  //          fflush(players[i].client_sockfile);
+  
           fwrite(gameroom[cur_room].gameboard, sizeof(char), sizeof(gameroom[cur_room].gameboard), players[i].client_sockfile);
           fflush(players[i].client_sockfile);
           printf("got it\n");
