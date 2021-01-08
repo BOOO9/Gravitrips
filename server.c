@@ -24,10 +24,10 @@
 typedef struct
 {
 	int sockfd;
-	int player_nmbr;  //checkt loggin
+	int player_nmbr;        //checkt loggin
 	FILE *client_sockfile;
-	int room; //tells which room, 0 = no room
-	int player_nmbr_room; //tells which (X or O player or viewer
+	int room;               //tells which room, 0 = no room
+	int player_nmbr_room;   //tells which (X or O player or viewer
 
 }player_t;
 
@@ -43,6 +43,7 @@ typedef struct
 
 gameroom_t gameroom[MAX_GAMEROOM];
 
+int player_cntr;
 
 pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -57,6 +58,13 @@ void usage();
 void *handle_client(void *arg);
 int start_server(int port);
 void get_userinput(char buffer[], char* message, FILE* client_sockfile);
+// mark_four()
+// seacrch_4_four()
+// 
+
+
+
+
 
 /*main*/
 
@@ -73,7 +81,8 @@ int main(int argc, char **argv)
   {
     clear_gameboard(i);
   }
-
+  
+  player_cntr = 0;
   user_count = 0;
   progname = argv[0];
   if (argc < 2) usage();
@@ -249,8 +258,9 @@ int start_server(int port)
 
   // TODO
   pthread_t thread_id;
-  while (1)
+  while (player_cntr < MAX_USER)
   {
+    player_cntr++;
 
     client_sockfd = accept(server_sockfd,
                           (struct sockaddr *)&address,
@@ -273,7 +283,7 @@ int start_server(int port)
 
   sleep(1);
   }
-  close(server_sockfd);
+  clos(server_sockfd);
 }
 
 
