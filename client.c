@@ -25,8 +25,8 @@ void error_exit(const char *msg);
 void usage();
 void *send_mesg(void *arg);
 void *recive_mesg(void* arg);
-void menue();// TODO
-void game();// TODO
+void menue();   // TODO funciton when Player in menu mode
+void game();    // TODO function when Player in game mode
 void get_user_input_to_server(char* buffer, FILE* server_sockfile);// TODO
 
 

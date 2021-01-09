@@ -33,17 +33,32 @@ typedef struct
 
 player_t players[MAX_USER];
 
-
+char symbols[] = {' ', 'X', 'O', '4'};
+/* Symbols:
+ *           0 = ' ' = free Space
+ *           1 = 'X' = Player 1 token
+ *           2 = 'O' = Player 2 token
+ *           3 = '4' = Four in a row
+ */
 
 typedef struct
 {
 	char gameboard[ROWS][COLUMNS];
+  //int gameboard[ROWS][COLUMNS];
 
 }gameroom_t;
 
 gameroom_t gameroom[MAX_GAMEROOM];
 
-int player_cntr;
+/* gameroom[x].gameboard[ROWS][COLS]
+ *
+ *           0 = ' ' = free Space
+ *           1 = 'X' = Player 1 token
+ *           2 = 'O' = Player 2 token
+ *           3 = '4' = Four in a row
+ */
+
+
 
 pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -60,11 +75,7 @@ int start_server(int port);
 void get_userinput(char buffer[], char* message, FILE* client_sockfile);
 // mark_four()
 // seacrch_4_four()
-// 
-
-
-
-
+//
 
 /*main*/
 
@@ -258,7 +269,8 @@ int start_server(int port)
 
   // TODO
   pthread_t thread_id;
-  while (player_cntr < MAX_USER)
+  
+  while (user_count < MAX_USER)
   {
     player_cntr++;
 
