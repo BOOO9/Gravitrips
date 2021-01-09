@@ -17,9 +17,8 @@
 #define MAX_USER 20
 #define MAX_GAMEROOM 8
 #define ROWS 6
-#define COLUMNS 7
+#define COLS 7
 
-#define a 3
 
 typedef struct
 {
@@ -27,7 +26,7 @@ typedef struct
 	int player_nmbr;        //checkt loggin
 	FILE *client_sockfile;
 	int room;               //tells which room, 0 = no room
-	int player_nmbr_room;   //tells which (X or O player or viewer
+	int player_room;   //tells if player 1 or player 2 or higher than 2 == viewer
 
 }player_t;
 
@@ -35,16 +34,16 @@ player_t players[MAX_USER];
 
 char symbols[] = {' ', 'X', 'O', '4'};
 /* Symbols:
- *           0 = ' ' = free Space
- *           1 = 'X' = Player 1 token
- *           2 = 'O' = Player 2 token
- *           3 = '4' = Four in a row
+ *           ' ' = free Space
+ *           'X' = token Player 1 
+ *           'O' = token Player 2 
+ *           '4' = Four in a row
  */
 
 typedef struct
 {
-	char gameboard[ROWS][COLUMNS];
-  //int gameboard[ROWS][COLUMNS];
+  int gameboard[ROWS][COLS];
+  int users_in_room;      //tells the numbers of users in a room
 
 }gameroom_t;
 
@@ -52,14 +51,14 @@ gameroom_t gameroom[MAX_GAMEROOM];
 
 /* gameroom[x].gameboard[ROWS][COLS]
  *
- *           0 = ' ' = free Space
- *           1 = 'X' = Player 1 token
- *           2 = 'O' = Player 2 token
- *           3 = '4' = Four in a row
+ *           0 = free Space = ' '
+ *           1 = token Player 1 = 'X'
+ *           2 = token Player 2 = 'O'
+ *           3 = Four in a row = '4'
  */
 
 
-
+//TODO
 pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
@@ -67,7 +66,7 @@ char *progname;
 int user_count;
 
 void clear_gameboard(int nmbr);  //nmbr = which board to clear
-void setToken(char field[], int room_nmbr);
+void setToken(char field[], int room_nmbr, int player);
 void error_exit(const char *msg);
 void usage();
 void *handle_client(void *arg);
@@ -101,13 +100,15 @@ int main(int argc, char **argv)
 
   if (port == 0) usage();
 
-  return start_server(port);
+  start_server(port);
+ 
+  return 0;
 }
 
 
 /*functions*/
 
-void setToken(char field[], int room_nmbr)
+void setToken(char field[], int room_nmbr, int player)
 {
   int row = 0;
 
@@ -117,16 +118,26 @@ void setToken(char field[], int room_nmbr)
   int set = atoi(field);
   set--;
 
-  printf("FIELD int: %d\n", set);
+  printf("FIELD int: %d // player_nbr: %d\n", set, player);
 
 
   for(row = 0; row < ROWS; row++)
   {
-    if(gameroom[room_nmbr].gameboard[row][set] == 'X') break;
+    if(gameroom[room_nmbr].gameboard[row][set] > 0) break;
   }
 
-  gameroom[room_nmbr].gameboard[row - 1][set] = 'X';
+  gameroom[room_nmbr].gameboard[row - 1][set] = player;
 
+  /*DEBUG printfs gemeboard
+  for(int i = 0; i < ROWS; i++)
+  {
+    for(int j = 0; j < COLS; j++)
+    {
+      printf("|%d", gameroom[room_nmbr].gameboard[i][j]);
+    }
+    printf("\n");
+  }
+  */
 }
 
 void error_exit(const char *msg)
@@ -178,16 +189,23 @@ void *handle_client(void *arg)
   {
     if(players[cur].room == 0) //player is in no room, send him room options
     {
-      fwrite(gameroom[cur].gameboard, sizeof(char), sizeof(gameroom[cur].gameboard), players[cur].client_sockfile);
+      fwrite(gameroom[cur].gameboard, sizeof(int), sizeof(gameroom[cur].gameboard), players[cur].client_sockfile);
       fflush(players[cur].client_sockfile);
 
       message = fgets(buffer, sizeof(buffer), client_sockfile);
       cur_room = atoi(message);
       players[cur].room = cur_room;
+      gameroom[cur_room].users_in_room++;
+      players[cur].player_room = gameroom[cur_room].users_in_room;
 
-    }else{ //player is in room, send board
-    
-  //      get_userinput(buffer, message, client_sockfile);
+    }
+
+
+    else //player is in room, send board
+    {
+
+      //TODO
+      //get_userinput(buffer, message, client_sockfile);
   
       message = fgets(buffer, sizeof(buffer), client_sockfile);
 
@@ -199,19 +217,19 @@ void *handle_client(void *arg)
 
       if(strcmp(buffer, "quit\n") == 0) break;
 
-      setToken(message, cur_room);
+      setToken(message, cur_room, players[cur].player_room);
 
       for(int i = 1; i <= MAX_USER; i++)
       {
         if(players[i].player_nmbr > 0 && players[i].room == cur_room)
         {
-          printf("PRINT TO %d: \n", i);
+
   //          fputs(message, players[i].client_sockfile);
   //          fflush(players[i].client_sockfile);
   
-          fwrite(gameroom[cur_room].gameboard, sizeof(char), sizeof(gameroom[cur_room].gameboard), players[i].client_sockfile);
+          fwrite(gameroom[cur_room].gameboard, sizeof(int), sizeof(gameroom[cur_room].gameboard), players[i].client_sockfile);
           fflush(players[i].client_sockfile);
-          printf("got it\n");
+
         }
       }
     }
@@ -248,23 +266,19 @@ int start_server(int port)
 
   const int optval = 1;
 
-  setsockopt(server_sockfd,
-             SOL_SOCKET,
-             SO_REUSEADDR,
-             &optval,
-             sizeof(int));
+  setsockopt(server_sockfd, SOL_SOCKET, SOL_SOCKET, &optval, sizeof(int));
 
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = INADDR_ANY;
   address.sin_port = port;
 
-  if (bind(server_sockfd,
-           (struct sockaddr *)&address,
-           sizeof(address)) != 0)
-           error_exit("bind failed");
+  if (bind(server_sockfd, (struct sockaddr *)&address, sizeof(address)) != 0) 
+      error_exit("bind failed");
 
   listen(server_sockfd, 5);
   addrlen = sizeof(struct sockaddr_in);
+  
+  printf("Server is running and waiting...\n");
 
   // TODO
   pthread_t thread_id;
@@ -272,9 +286,7 @@ int start_server(int port)
   while (user_count < MAX_USER)
   {
 
-    client_sockfd = accept(server_sockfd,
-                          (struct sockaddr *)&address,
-                          &addrlen);
+    client_sockfd = accept(server_sockfd, (struct sockaddr *)&address, &addrlen);
 
     if (client_sockfd > 0)
     {
@@ -282,11 +294,8 @@ int start_server(int port)
 
       user_count++;
 
-      if (pthread_create(&thread_id,
-                       NULL,
-                       handle_client,
-                       (void *)&client_sockfd) < 0) 
-                       error_exit("pthread_create failed");
+      if (pthread_create(&thread_id, NULL, handle_client, (void *)&client_sockfd) < 0)   
+          error_exit("pthread_create failed");
 
     }
     else error_exit("accept client");      // TODO
@@ -302,9 +311,9 @@ void clear_gameboard(int nmbr)
 {
     for (int j = 0; j < ROWS; j++)
     {
-      for (int k = 0; k < COLUMNS; k++)
+      for (int k = 0; k < COLS; k++)
       {
-        gameroom[nmbr].gameboard[j][k] = ' ';
+        gameroom[nmbr].gameboard[j][k] = 0;
       }
     }
 }

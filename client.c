@@ -15,24 +15,30 @@
 /*declaration*/
 
 #define BUF 1024
+#define ROWS 6
+#define COLS 7
+#define INDENT "    "
 
 int state = 0; //defines what to do (0 = menue, 1 = in game as player, in game as viewer)
 int run = 1;
 char *progname;
 
-void printBoard(char board[6][7]);
+char symbols[] = {' ', 'X', 'O', '4'};
+
+
+void printBoard(int board[6][7]);
 void error_exit(const char *msg);
 void usage();
 void *send_mesg(void *arg);
 void *recive_mesg(void* arg);
-void menue();   // TODO funciton when Player in menu mode
+void menue();   // TODO funciton when Player in menu modz
 void game();    // TODO function when Player in game mode
 void get_user_input_to_server(char* buffer, FILE* server_sockfile);// TODO
 
 
 
 /* main */
-int main(int argc, char **argv)
+int main(int argc, char **argv) //TODO start_server funciton um die main kürzer zu machen
 {
   int server_sockfd;
   struct sockaddr_in address;
@@ -51,13 +57,10 @@ int main(int argc, char **argv)
   address.sin_port = atoi(argv[2]);
   inet_aton(argv[1], &address.sin_addr);
 
-  if (connect(server_sockfd,
-              (struct sockaddr *)&address,
-              sizeof(address)) == 0)
+  if (connect(server_sockfd, (struct sockaddr *)&address, sizeof(address)) == 0)
   {
     printf("Verbindung mit dem Server (%s) hergestellt\n", inet_ntoa(address.sin_addr));
   }
-
   else
   {
     error_exit("connect failed");
@@ -65,10 +68,7 @@ int main(int argc, char **argv)
 
   pthread_t thread_recive_mesg;
 
-  if(pthread_create(&thread_recive_mesg,
-                    NULL,
-                    recive_mesg,
-                    (void *)&server_sockfd)< 0)
+  if(pthread_create(&thread_recive_mesg, NULL, recive_mesg, (void *)&server_sockfd)< 0)
   {
 	  printf("problem send recive thread");
 	  error_exit("msg thread failed");
@@ -76,10 +76,7 @@ int main(int argc, char **argv)
 
 
   pthread_t thread_send_mesg;
-  if(pthread_create(&thread_send_mesg,
-                    NULL,
-                    send_mesg,
-                    (void *)&server_sockfd) < 0)
+  if(pthread_create(&thread_send_mesg, NULL, send_mesg, (void *)&server_sockfd) < 0)
   {
 	  printf("problem send msg thread");
 	  error_exit("msg thread failed");
@@ -153,33 +150,43 @@ void *recive_mesg(void* arg)
   char buffer[100];
   char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
 
-  char board[6][7];
+  int board[6][7];
 
+//fread(board, sizeof(char), sizeof(board), server_sockfile);
+
+/*
+for(int i = 0; i < ROWS; i++)
+  {
+  for(int j = 0; j < COLS; j++)
+  {
+    printf("/%dboard
+  }
+*/
 
   while(1)
   {
 
-//    sleep(1);
+  //    sleep(1);
     switch(state)
     {
       case 0:
         menue();
-        fread(buffer, sizeof(char), sizeof(board), server_sockfile);
+        fread(buffer, sizeof(int), sizeof(board), server_sockfile);
         break;
       case 1:
-        fread(board, sizeof(char), sizeof(board), server_sockfile);
+        fread(board, sizeof(int), sizeof(board), server_sockfile);
         printf("you are a player\n");
         printBoard(board);
         break;
       case 2:
-        fread(board, sizeof(char), sizeof(board), server_sockfile);
+        fread(board, sizeof(int), sizeof(board), server_sockfile);
         printf("you are a viewer, press 0 to leave\n\n");
         printBoard(board);
         break;
     }
-
-//	  fgets(buffer, BUF, server_sockfile);
-//	  printf("\ngot from server: %s", buffer);
+  
+  //	  fgets(buffer, BUF, server_sockfile);
+  //	  printf("\ngot from server: %s", buffer);
   }
 
   run = 0;
@@ -192,27 +199,35 @@ void *recive_mesg(void* arg)
 void menue()
 {
   printf("\e[1;1H\e[2J");
-  printf("menue, choose room: ");
+  printf("---- Menu ---- \n Choose a room (1 - 5): ");
 }
 
 
-void printBoard(char board[6][7])
+void printBoard(int board[6][7])
 {
+  int i = 0;
+  int j = 0;
+
   printf("\e[1;1H\e[2J");
 
-  printf("  1 2 3 4 5 6 7\n");
-  printf(" ---------------\n");
+  printf("\t  ");
 
-  for (int i = 0; i < 6; i++)
+  for(i = 1; i <= COLS; i++)
+    printf("|%d", i);
+
+  printf("|\n");
+
+
+  for(i = 0; i < ROWS; i++)
   {
-    printf("%d", i + 1);
+    printf("\t%d ", i + 1);
 
-    for (int j = 0; j < 7; j++) printf("|%c", board[i][j]);
+    for (j = 0; j < COLS; j++) printf("|%c", symbols[board[i][j]]);
 
     printf("|\n");
   }
 
-  printf(" ---------------\n\n");
+  printf("\t  ---------------\n\n");
 }
 
 
