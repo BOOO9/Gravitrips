@@ -93,7 +93,6 @@ int main(int argc, char **argv)
     clear_gameboard(i);
   }
   
-  player_cntr = 0;
   user_count = 0;
   progname = argv[0];
   if (argc < 2) usage();
@@ -272,7 +271,6 @@ int start_server(int port)
   
   while (user_count < MAX_USER)
   {
-    player_cntr++;
 
     client_sockfd = accept(server_sockfd,
                           (struct sockaddr *)&address,
@@ -295,7 +293,7 @@ int start_server(int port)
 
   sleep(1);
   }
-  clos(server_sockfd);
+  close(server_sockfd);
 }
 
 
