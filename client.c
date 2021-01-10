@@ -19,7 +19,7 @@
 #define COLS 7
 #define INDENT "    "
 
-int state = 0; //defines what to do (0 = menue, 1 = in game as player, in game as viewer)
+int state = 0; //defines what to do (0 = menue, 1 = in game as player, 2 = in game as viewer)
 int run = 1;
 char *progname;
 
@@ -34,46 +34,29 @@ void *recive_mesg(void* arg);
 void menue();   // TODO funciton when Player in menu modz
 void game();    // TODO function when Player in game mode
 void get_user_input_to_server(char* buffer, FILE* server_sockfile);// TODO
-
+int start_server(int port);
 
 
 /* main */
 int main(int argc, char **argv) //TODO start_server funciton um die main kürzer zu machen
 {
-  int server_sockfd;
-  struct sockaddr_in address;
 
-  if (argc < 3)
+  if (argc < 2)
   {
     usage();
   }
 
-  if ((server_sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-  {
-    error_exit("socket failed");
-  }
+  int port = atoi(argv[1]); 
 
-  address.sin_family = AF_INET;
-  address.sin_port = atoi(argv[2]);
-  inet_aton(argv[1], &address.sin_addr);
-
-  if (connect(server_sockfd, (struct sockaddr *)&address, sizeof(address)) == 0)
-  {
-    printf("Verbindung mit dem Server (%s) hergestellt\n", inet_ntoa(address.sin_addr));
-  }
-  else
-  {
-    error_exit("connect failed");
-  }
+  int server_sockfd = start_server(port);
 
   pthread_t thread_recive_mesg;
 
-  if(pthread_create(&thread_recive_mesg, NULL, recive_mesg, (void *)&server_sockfd)< 0)
+  if(pthread_create(&thread_recive_mesg, NULL, recive_mesg, (void *)&server_sockfd) < 0)
   {
 	  printf("problem send recive thread");
 	  error_exit("msg thread failed");
   }
-
 
   pthread_t thread_send_mesg;
   if(pthread_create(&thread_send_mesg, NULL, send_mesg, (void *)&server_sockfd) < 0)
@@ -103,6 +86,34 @@ void usage()
   exit(EXIT_FAILURE);
 }
 
+int start_server(int port)
+{
+
+  int server_sockfd;
+  struct sockaddr_in address;
+
+  if ((server_sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+  {
+    error_exit("socket failed");
+  }
+
+  address.sin_family = AF_INET;
+  address.sin_port = port;
+  //to choose the ipadress: inet_aton(argv[1], &address.sin_addr);
+  address.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+  if (connect(server_sockfd, (struct sockaddr *)&address, sizeof(address)) == 0)
+  {
+    printf("Verbindung mit dem Server (%s) hergestellt\n", inet_ntoa(address.sin_addr));
+  }
+  else
+  {
+    error_exit("connect failed");
+  }
+
+  return server_sockfd;
+}
+
 void *send_mesg(void *arg)
 {
   int server_sockfd = *((int *)arg);
@@ -118,7 +129,7 @@ void *send_mesg(void *arg)
   {
     switch(state)
     {
-      case 0:
+      case 0:  
         get_user_input_to_server(buffer, server_sockfile);
         if(atoi(buffer) > 0) state = 1; //TODO idea: check if room is full, to get right state
         break;
@@ -151,18 +162,9 @@ void *recive_mesg(void* arg)
   char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
 
   int board[6][7];
-
-//fread(board, sizeof(char), sizeof(board), server_sockfile);
-
-/*
-for(int i = 0; i < ROWS; i++)
-  {
-  for(int j = 0; j < COLS; j++)
-  {
-    printf("/%dboard
-  }
-*/
-
+  
+  //fread(board, sizeof(char), sizeof(board), server_sockfile);
+  
   while(1)
   {
 
