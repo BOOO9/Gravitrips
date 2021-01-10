@@ -65,16 +65,16 @@ pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
 char *progname;
 int user_count;
 
+//XXX
 void clear_gameboard(int nmbr);  //nmbr = which board to clear
-void setToken(char field[], int room_nmbr, int player);
+void setToken(char col[], int room_nmbr, int player);
 void error_exit(const char *msg);
 void usage();
 void *handle_client(void *arg);
 int start_server(int port);
 void get_userinput(char buffer[], char* message, FILE* client_sockfile);
-// mark_four()
-// seacrch_4_four()
-//
+int mark_four(int room_nbr, int rs, int cs, int dr, int dc);
+int search_4_four(int room_nmbr, int player);
 
 /*main*/
 
@@ -108,15 +108,20 @@ int main(int argc, char **argv)
 
 /*functions*/
 
-void setToken(char field[], int room_nmbr, int player)
+void setToken(char col[], int room_nmbr, int player)
 {
   int row = 0;
 
-  printf("FIELD string: %s\n", field);
+  printf("FIELD string: %s\n", col);
 
 
-  int set = atoi(field);
-  set--;
+  int set = atoi(col);
+  if(set <= 0) 
+  {
+    printf("\nUser is to stupid to play\n");
+    return;
+  }
+    set--;
 
   printf("FIELD int: %d // player_nbr: %d\n", set, player);
 
@@ -128,7 +133,7 @@ void setToken(char field[], int room_nmbr, int player)
 
   gameroom[room_nmbr].gameboard[row - 1][set] = player;
 
-  /*DEBUG printfs gemeboard
+  /*DEBUG printf gemeboard:
   for(int i = 0; i < ROWS; i++)
   {
     for(int j = 0; j < COLS; j++)
@@ -160,7 +165,7 @@ void *handle_client(void *arg)
 
   int cur;
   int cur_room = 0;
-
+	int winner = 0;
 
   for(int i = 1; i < MAX_USER; i++)
   {
@@ -218,15 +223,21 @@ void *handle_client(void *arg)
       if(strcmp(buffer, "quit\n") == 0) break;
 
       setToken(message, cur_room, players[cur].player_room);
+		
+			winner = search_4_four(cur_room, players[cur].player_room);
+			
+			if(winner > 0) 
+			{
+				printf("\n\n!!! We have a winner: Player %d (%c)\n !!!", winner, symbols[winner]);
+				//break;
+			}
+
 
       for(int i = 1; i <= MAX_USER; i++)
       {
         if(players[i].player_nmbr > 0 && players[i].room == cur_room)
         {
 
-  //          fputs(message, players[i].client_sockfile);
-  //          fflush(players[i].client_sockfile);
-  
           fwrite(gameroom[cur_room].gameboard, sizeof(int), sizeof(gameroom[cur_room].gameboard), players[i].client_sockfile);
           fflush(players[i].client_sockfile);
 
@@ -304,6 +315,138 @@ int start_server(int port)
   }
   close(server_sockfd);
 }
+
+int mark_four(int room_nbr, int rs, int cs, int dr, int dc)
+{
+    int i;
+
+    for (i = 0; i < 4; i++) 
+        gameroom[room_nbr].gameboard[rs+i*dr][cs+i*dc] += 2;
+}
+
+/*
+int search_4_four(int room_nbr, int player)
+{
+    int i, j;
+
+		//int Grid[6][7] = gameroom[room_nbr].gameboard;
+     
+    // Suche waagrecht    
+    for (i = 0; i < ROWS; i++)
+    {
+        for (j = 0; j < COLS - 3; j++)
+        {
+            if (Grid[i][j] == player && Grid[i][j+1] == player && Grid[i][j+2] == player && Grid[i][j+3] == player ) 
+            {
+                mark_four(room_nbr, i, j, 0, +1);
+                return player; 
+            }
+        }
+    }
+
+    // Suche senkrecht    
+    for (j=0; j<COLS; j++)
+    {    
+        for (i=0; i<ROWS-3; i++)
+        {
+            if (Grid[i][j] == player && Grid[i+1][j] == player && Grid[i+2][j] == player && Grid[i+3][j] == player ) 
+            {
+                mark_four(room_nbr, i, j, +1, 0);
+                return player; 
+            }
+        }
+    }
+
+    // Suche diagonal '\'   
+    for(i=0; i<ROWS-3; i++)
+    {
+        for(j=0; j<COLS-3; j++)
+        {
+            if(Grid[i][j] == player && Grid[i+1][j+1] == player && Grid[i+2][j+2] == player && Grid[i+3][j+3] == player )
+            {
+                mark_four(room_nbr, i, j, +1, +1);
+                return player; 
+            }
+        }
+    }
+
+    // Suche diagonal '/'
+    for (i=0; i<ROWS-3; i++)
+    {
+        for (j=COLS-4; j<COLS; j++)
+        {
+            if (Grid[i][j] == player && Grid[i+1][j-1] == player && Grid[i+2][j-2] == player && Grid[i+3][j-3] == player)
+            {
+                mark_four(room_nbr, i, j, +1, -1);
+                return player;
+            }
+        }
+    }
+
+    return 0;
+}
+*/
+
+int search_4_four(int room_nbr, int player)
+{
+    int i, j;
+
+     
+    // Suche waagrecht    
+    for (i = 0; i < ROWS; i++)
+    {
+        for (j = 0; j < COLS - 3; j++)
+        {
+            if (gameroom[room_nbr].gameboard[i][j] == player && gameroom[room_nbr].gameboard[i][j+1] == player && gameroom[room_nbr].gameboard[i][j+2] == player && gameroom[room_nbr].gameboard[i][j+3] == player ) 
+            {
+                mark_four(room_nbr, i, j, 0, +1);
+                return player; 
+            }
+        }
+    }
+
+    // Suche senkrecht    
+    for (j=0; j<COLS; j++)
+    {    
+        for (i=0; i<ROWS-3; i++)
+        {
+            if (gameroom[room_nbr].gameboard[i][j] == player && gameroom[room_nbr].gameboard[i+1][j] == player && gameroom[room_nbr].gameboard[i+2][j] == player && gameroom[room_nbr].gameboard[i+3][j] == player ) 
+            {
+                mark_four(room_nbr, i, j, +1, 0);
+                return player; 
+            }
+        }
+    }
+
+    // Suche diagonal '\'   
+    for(i=0; i<ROWS-3; i++)
+    {
+        for(j=0; j<COLS-3; j++)
+        {
+            if(gameroom[room_nbr].gameboard[i][j] == player && gameroom[room_nbr].gameboard[i+1][j+1] == player && gameroom[room_nbr].gameboard[i+2][j+2] == player && gameroom[room_nbr].gameboard[i+3][j+3] == player )
+            {
+                mark_four(room_nbr, i, j, +1, +1);
+                return player; 
+            }
+        }
+    }
+
+    // Suche diagonal '/'
+    for (i=0; i<ROWS-3; i++)
+    {
+        for (j=COLS-4; j<COLS; j++)
+        {
+            if (gameroom[room_nbr].gameboard[i][j] == player && gameroom[room_nbr].gameboard[i+1][j-1] == player && gameroom[room_nbr].gameboard[i+2][j-2] == player && gameroom[room_nbr].gameboard[i+3][j-3] == player)
+            {
+                mark_four(room_nbr, i, j, +1, -1);
+                return player;
+            }
+        }
+    }
+
+    return 0;
+}
+
 
 
 

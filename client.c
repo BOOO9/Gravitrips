@@ -65,7 +65,13 @@ int main(int argc, char **argv) //TODO start_server funciton um die main kürzer
 	  error_exit("msg thread failed");
   }
 
-  while(run);// sleep(2);
+  
+  pthread_join(thread_send_mesg, NULL);
+  pthread_join(thread_recive_mesg, NULL);
+
+     
+  
+  //while(run);// sleep(2);
 
   return EXIT_SUCCESS;
 }
@@ -127,6 +133,8 @@ void *send_mesg(void *arg)
 
   while(1)
   {
+
+    //sleep(1);
     switch(state)
     {
       case 0:  
@@ -168,7 +176,7 @@ void *recive_mesg(void* arg)
   while(1)
   {
 
-  //    sleep(1);
+    //sleep(1);
     switch(state)
     {
       case 0:
@@ -178,6 +186,7 @@ void *recive_mesg(void* arg)
       case 1:
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printf("you are a player\n");
+        sleep(2);
         printBoard(board);
         break;
       case 2:
@@ -242,3 +251,12 @@ void get_user_input_to_server(char* buffer, FILE* server_sockfile)
   fflush(server_sockfile);
   printf("\nwrote to server: %s\n", buffer);
 }
+
+
+
+
+
+
+
+
+
