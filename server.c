@@ -133,7 +133,9 @@ void setToken(char col[], int room_nmbr, int player)
 
   gameroom[room_nmbr].gameboard[row - 1][set] = player;
 
-  /*DEBUG printf gemeboard:
+
+ //DEBUG printf gemeboard:
+
   for(int i = 0; i < ROWS; i++)
   {
     for(int j = 0; j < COLS; j++)
@@ -142,7 +144,6 @@ void setToken(char col[], int room_nmbr, int player)
     }
     printf("\n");
   }
-  */
 }
 
 void error_exit(const char *msg)
@@ -165,7 +166,7 @@ void *handle_client(void *arg)
 
   int cur;
   int cur_room = 0;
-	int winner = 0;
+  int winner = 0;
 
   for(int i = 1; i < MAX_USER; i++)
   {
@@ -186,10 +187,10 @@ void *handle_client(void *arg)
 
   char buffer[100];
   char *message;
-  
-    
+
+
   //  players[cur].room = a;
-  
+
   while(1)
   {
     if(players[cur].room == 0) //player is in no room, send him room options
@@ -216,21 +217,18 @@ void *handle_client(void *arg)
 
       if (message == NULL)
       {
-        error_exit("userinputt NULL");
+        printf("userinputt NULL\n");
+	printf("disconnect user %d\n", players[cur].player_nmbr);
+	break;
       }
 
 
       if(strcmp(buffer, "quit\n") == 0) break;
 
       setToken(message, cur_room, players[cur].player_room);
-		
+
 			winner = search_4_four(cur_room, players[cur].player_room);
-			
-			if(winner > 0) 
-			{
-				printf("\n\n!!! We have a winner: Player %d (%c)\n !!!", winner, symbols[winner]);
-				//break;
-			}
+
 
 
       for(int i = 1; i <= MAX_USER; i++)
@@ -243,6 +241,15 @@ void *handle_client(void *arg)
 
         }
       }
+
+      if(winner > 0) 
+      {
+        printf("\n\n!!! We have a winner: Player %d (%c)\n !!!", winner, symbols[winner]);
+        clear_gameboard(cur_room);
+      }
+
+
+
     }
 
 
@@ -288,12 +295,12 @@ int start_server(int port)
 
   listen(server_sockfd, 5);
   addrlen = sizeof(struct sockaddr_in);
-  
+
   printf("Server is running and waiting...\n");
 
   // TODO
   pthread_t thread_id;
-  
+
   while (user_count < MAX_USER)
   {
 

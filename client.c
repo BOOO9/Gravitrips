@@ -65,12 +65,12 @@ int main(int argc, char **argv) //TODO start_server funciton um die main kürzer
 	  error_exit("msg thread failed");
   }
 
-  
+
   pthread_join(thread_send_mesg, NULL);
   pthread_join(thread_recive_mesg, NULL);
 
-     
-  
+
+
   //while(run);// sleep(2);
 
   return EXIT_SUCCESS;
@@ -137,7 +137,7 @@ void *send_mesg(void *arg)
     //sleep(1);
     switch(state)
     {
-      case 0:  
+      case 0:
         get_user_input_to_server(buffer, server_sockfile);
         if(atoi(buffer) > 0) state = 1; //TODO idea: check if room is full, to get right state
         break;
@@ -170,9 +170,9 @@ void *recive_mesg(void* arg)
   char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
 
   int board[6][7];
-  
+
   //fread(board, sizeof(char), sizeof(board), server_sockfile);
-  
+
   while(1)
   {
 
@@ -185,14 +185,14 @@ void *recive_mesg(void* arg)
         break;
       case 1:
         fread(board, sizeof(int), sizeof(board), server_sockfile);
-        printf("you are a player\n");
-        sleep(2);
+//        sleep(2);
         printBoard(board);
+        printf("you are a player\n");
         break;
       case 2:
         fread(board, sizeof(int), sizeof(board), server_sockfile);
-        printf("you are a viewer, press 0 to leave\n\n");
         printBoard(board);
+         printf("you are a viewer, press 0 to leave\n\n");
         break;
     }
   
