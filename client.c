@@ -30,8 +30,7 @@ char *progname;
 char symbols[] = {' ', 'X', 'O', '4'};
 
 
-
-void printBoard(int board[6][7]);
+void printBoard(int board[ROWS][COLS+1]);
 void error_exit(const char *msg);
 void usage();
 void *send_mesg(void *arg);
@@ -201,7 +200,7 @@ void *recive_mesg(void* arg)
   char buffer[100];
   char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
 
-  int board[ROWS][COLS];
+  int board[ROWS][COLS+1];
 
   //fread(board, sizeof(char), sizeof(board), server_sockfile);
 
@@ -214,7 +213,10 @@ void *recive_mesg(void* arg)
       case 0:
         menue(server_sockfile);
         fread(board, sizeof(int), sizeof(board), server_sockfile);
+//        sleep(2);
         printBoard(board);
+        printf("you are a player\n");
+
       break;
       case 1:
         fread(board, sizeof(int), sizeof(board), server_sockfile);
@@ -273,7 +275,7 @@ void menue(FILE* server_sockfile)
 }
 
 
-void printBoard(int board[6][7])
+void printBoard(int board[ROWS][COLS+1])
 {
   int i = 0;
   int j = 0;
@@ -298,6 +300,8 @@ void printBoard(int board[6][7])
   }
 
   printf("\t  ---------------\n\n");
+
+  printf("Round %d, Player X victories: %d, Player O victories: %d\n\n",board[0][COLS]+1, board[1][COLS], board[2][COLS]);
 }
 
 

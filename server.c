@@ -18,7 +18,7 @@
 #define MAX_GAMEROOM 5
 #define ROWS 6
 #define COLS 7
-
+#define MAX_ROUNDS 3 //defines rounds to play till win
 
 typedef struct
 {
@@ -35,16 +35,14 @@ player_t players[MAX_USER];
 char symbols[] = {' ', 'X', 'O', '4'};
 /* Symbols:
  *           ' ' = free Space
- *           'X' = token Player 1 
- *           'O' = token Player 2 
+ *           'X' = token Player 1
+ *           'O' = token Player 2
  *           '4' = Four in a row
  */
 
 typedef struct
 {
-  int gameboard[ROWS][COLS];
-//  int users_in_room;      //tells the numbers of users in a room
-
+  int gameboard[ROWS][COLS+1];
 }gameroom_t;
 
 gameroom_t gameroom[MAX_GAMEROOM];
@@ -58,6 +56,13 @@ int users_in_room[MAX_GAMEROOM];
  *           2 = token Player 2 = 'O'
  *           3 = Four in a row = '4'
 
+	INFO COL = COLS, easy way to send data to client
+
+	last col row 0 = cur_round
+	 	 row 1 = victorys player X
+		 row 2 = victorys player O
+ 		 more to come äääh 
+
 */
 
 
@@ -69,7 +74,7 @@ char *progname;
 int user_count;
 
 //XXX
-void clear_gameboard(int nmbr);  //nmbr = which board to clear
+void clear_gameboard(int nmbr, int rows, int cols);  //nmbr = which board to clear
 void setToken(char col[], int room_nmbr, int player);
 void error_exit(const char *msg);
 void usage();
@@ -84,6 +89,8 @@ void send_board_to_user(int cur_room);
 
 int main(int argc, char **argv)
 {
+printf("%d",COLS+1 );
+
   for(int i = 0; i <= MAX_USER; i++)
   {
     players[i].player_nmbr = -1;
@@ -93,7 +100,7 @@ int main(int argc, char **argv)
 
   for(int i = 0; i < MAX_GAMEROOM; i++)
   {
-    clear_gameboard(i);
+    clear_gameboard(i, ROWS, COLS+1);
     users_in_room[i] = 0;
   }
   
@@ -145,7 +152,7 @@ void setToken(char col[], int room_nmbr, int player)
   {
     for(int j = 0; j < ROWS; j++)
     {
-      for(int k = 0; k < COLS; k++)
+      for(int k = 0; k < COLS+1; k++)
       {
         printf("|%d", gameroom[i].gameboard[j][k]);
       }
@@ -173,6 +180,7 @@ void *handle_client(void *arg)
 {
   int sockfd = *((int *)arg);
 
+  int cur_round = 0;
   int cur;
   int cur_room = 0;
   int winner = 0;
@@ -235,10 +243,13 @@ void *handle_client(void *arg)
       //TODO
       //get_userinput(buffer, message, client_sockfile);
 
+      gameroom[cur_room].gameboard[4][COLS] = 2;
+
       send_board_to_user(cur_room);
 
 
-      while(winner == 0){
+      while(cur_round < MAX_ROUNDS){
+
         message = fgets(buffer, sizeof(buffer), client_sockfile);
 
         if (message == NULL)
@@ -255,17 +266,24 @@ void *handle_client(void *arg)
 
         winner = search_4_four(cur_room, players[cur].player_room);
 
+        if(winner > 0)gameroom[cur_room].gameboard[winner][COLS]++;
+
         send_board_to_user(cur_room);
 
 
         if(winner > 0)
         {
-          printf("\n\n!!! We have a winner: Player %d (%c)\n !!!", winner, symbols[winner]);
-          clear_gameboard(cur_room);
-          players[cur].room = 0;
+          cur_round++;
+          gameroom[cur_room].gameboard[0][COLS] = cur_round;
+
+          printf("\n\n!!! We have a winner for the round: Player %d (%c)\n !!!", winner, symbols[winner]);
+          clear_gameboard(cur_room, ROWS, COLS-1);
+//          players[cur].room = 0;
+
+
           message = fgets(buffer, sizeof(buffer), client_sockfile); //wait till client leave room
 
-          users_in_room[cur_room] = 0;
+//          users_in_room[cur_room] = 0;
 
           if (message == NULL)
           {
@@ -273,12 +291,13 @@ void *handle_client(void *arg)
             printf("disconnect user %d\n", players[cur].player_nmbr);
             goto client_left;
           }
-
+          winner = 0;
         }
 
 
-      }//while winner == 0 end
+      }//while round loop
 
+      cur_round = 0;
     }//else end
 
 
@@ -359,7 +378,6 @@ void send_board_to_user(int cur_room)
       {
         if(players[i].player_nmbr > 0 && players[i].room == cur_room)
         {
-
           fwrite(gameroom[cur_room].gameboard, sizeof(int), sizeof(gameroom[cur_room].gameboard), players[i].client_sockfile);
           fflush(players[i].client_sockfile);
         }
@@ -502,11 +520,11 @@ int search_4_four(int room_nbr, int player)
 
 
 
-void clear_gameboard(int nmbr)
+void clear_gameboard(int nmbr, int rows, int cols)
 {
-    for (int j = 0; j < ROWS; j++)
+    for (int j = 0; j < rows; j++)
     {
-      for (int k = 0; k < COLS; k++)
+      for (int k = 0; k < cols; k++)
       {
         gameroom[nmbr].gameboard[j][k] = 0;
       }
