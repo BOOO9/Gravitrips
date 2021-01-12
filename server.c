@@ -15,7 +15,7 @@
 
 #define BUF 1024
 #define MAX_USER 20
-#define MAX_GAMEROOM 8
+#define MAX_GAMEROOM 5
 #define ROWS 6
 #define COLS 7
 
@@ -43,11 +43,13 @@ char symbols[] = {' ', 'X', 'O', '4'};
 typedef struct
 {
   int gameboard[ROWS][COLS];
-  int users_in_room;      //tells the numbers of users in a room
+//  int users_in_room;      //tells the numbers of users in a room
 
 }gameroom_t;
 
 gameroom_t gameroom[MAX_GAMEROOM];
+
+int users_in_room[MAX_GAMEROOM];
 
 /* gameroom[x].gameboard[ROWS][COLS]
  *
@@ -55,7 +57,8 @@ gameroom_t gameroom[MAX_GAMEROOM];
  *           1 = token Player 1 = 'X'
  *           2 = token Player 2 = 'O'
  *           3 = Four in a row = '4'
- */
+
+*/
 
 
 //TODO
@@ -72,9 +75,10 @@ void error_exit(const char *msg);
 void usage();
 void *handle_client(void *arg);
 int start_server(int port);
-void get_userinput(char buffer[], char* message, FILE* client_sockfile);
 int mark_four(int room_nbr, int rs, int cs, int dr, int dc);
 int search_4_four(int room_nmbr, int player);
+void send_board_to_user(int cur_room);
+
 
 /*main*/
 
@@ -90,6 +94,7 @@ int main(int argc, char **argv)
   for(int i = 0; i < MAX_GAMEROOM; i++)
   {
     clear_gameboard(i);
+    users_in_room[i] = 0;
   }
   
   user_count = 0;
@@ -136,13 +141,17 @@ void setToken(char col[], int room_nmbr, int player)
 
  //DEBUG printf gemeboard:
 
-  for(int i = 0; i < ROWS; i++)
+  for(int i = 0; i < MAX_GAMEROOM; i++)
   {
-    for(int j = 0; j < COLS; j++)
+    for(int j = 0; j < ROWS; j++)
     {
-      printf("|%d", gameroom[room_nmbr].gameboard[i][j]);
+      for(int k = 0; k < COLS; k++)
+      {
+        printf("|%d", gameroom[i].gameboard[j][k]);
+      }
+      printf("\n");
     }
-    printf("\n");
+    printf("room %d \n\n", i);
   }
 }
 
@@ -195,25 +204,23 @@ void *handle_client(void *arg)
   {
     if(players[cur].room == 0) //player is in no room, send him room options
     {
-      fwrite(gameroom[cur].gameboard, sizeof(int), sizeof(gameroom[cur].gameboard), players[cur].client_sockfile);
+//      for(int i = 0; i< MAX_GAMEROOM; i++)
+//      {
+//        buffer[] = gameroom[3].users_in_room;
+//      }
+
+for(int i = 0; i<MAX_GAMEROOM; i++) printf("users in room: %d  ", users_in_room[i]);
+
+      fwrite(users_in_room, sizeof(int), MAX_GAMEROOM, players[cur].client_sockfile);
       fflush(players[cur].client_sockfile);
 
+
       message = fgets(buffer, sizeof(buffer), client_sockfile);
-      cur_room = atoi(message);
+      cur_room = atoi(message)-1;
       players[cur].room = cur_room;
-      gameroom[cur_room].users_in_room++;
-      players[cur].player_room = gameroom[cur_room].users_in_room;
+      users_in_room[cur_room]++;
+      players[cur].player_room = users_in_room[cur_room];
 
-    }
-
-
-    else //player is in room, send board
-    {
-
-      //TODO
-      //get_userinput(buffer, message, client_sockfile);
-  
-      message = fgets(buffer, sizeof(buffer), client_sockfile);
 
       if (message == NULL)
       {
@@ -225,36 +232,65 @@ void *handle_client(void *arg)
 
       if(strcmp(buffer, "quit\n") == 0) break;
 
-      setToken(message, cur_room, players[cur].player_room);
-
-			winner = search_4_four(cur_room, players[cur].player_room);
-
-
-
-      for(int i = 1; i <= MAX_USER; i++)
-      {
-        if(players[i].player_nmbr > 0 && players[i].room == cur_room)
-        {
-
-          fwrite(gameroom[cur_room].gameboard, sizeof(int), sizeof(gameroom[cur_room].gameboard), players[i].client_sockfile);
-          fflush(players[i].client_sockfile);
-
-        }
-      }
-
-      if(winner > 0) 
-      {
-        printf("\n\n!!! We have a winner: Player %d (%c)\n !!!", winner, symbols[winner]);
-        clear_gameboard(cur_room);
-      }
-
-
 
     }
 
 
+    else //player is in room, send board
+    {
+
+      //TODO
+      //get_userinput(buffer, message, client_sockfile);
+
+      send_board_to_user(cur_room);
+
+
+      while(winner == 0){
+        message = fgets(buffer, sizeof(buffer), client_sockfile);
+
+        if (message == NULL)
+        {
+          printf("userinputt NULL\n");
+          printf("disconnect user %d\n", players[cur].player_nmbr);
+          goto client_left;
+        }
+
+
+        if(strcmp(buffer, "quit\n") == 0) break;
+
+        setToken(message, cur_room, players[cur].player_room);
+
+        winner = search_4_four(cur_room, players[cur].player_room);
+
+        send_board_to_user(cur_room);
+
+
+        if(winner > 0)
+        {
+          printf("\n\n!!! We have a winner: Player %d (%c)\n !!!", winner, symbols[winner]);
+          clear_gameboard(cur_room);
+          players[cur].room = 0;
+          message = fgets(buffer, sizeof(buffer), client_sockfile); //wait till client leave room
+
+          if (message == NULL)
+          {
+            printf("userinputt NULL\n");
+            printf("disconnect user %d\n", players[cur].player_nmbr);
+            goto client_left;
+          }
+
+        }
+
+
+      }//while winner == 0 end
+
+    }//else end
+
+
     printf("\ngot from client usernmbr %d, fd %d: %s\n", cur, players[cur].player_nmbr, buffer);
   }
+
+  client_left:
 
   printf("someone left\n");
   user_count--;
@@ -264,10 +300,6 @@ void *handle_client(void *arg)
   fclose(players[cur].client_sockfile);
 }
 
-
-void get_userinput(char buffer[100], char* message, FILE* client_sockfile)
-{
-}
 
 
 
@@ -322,6 +354,24 @@ int start_server(int port)
   }
   close(server_sockfd);
 }
+
+
+
+
+void send_board_to_user(int cur_room)
+{
+      for(int i = 1; i <= MAX_USER; i++)
+      {
+        if(players[i].player_nmbr > 0 && players[i].room == cur_room)
+        {
+
+          fwrite(gameroom[cur_room].gameboard, sizeof(int), sizeof(gameroom[cur_room].gameboard), players[i].client_sockfile);
+          fflush(players[i].client_sockfile);
+        }
+      }
+}
+
+
 
 int mark_four(int room_nbr, int rs, int cs, int dr, int dc)
 {

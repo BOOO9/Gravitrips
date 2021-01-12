@@ -12,13 +12,17 @@
 #include <pthread.h>
 
 
+
 /*declaration*/
 
+#define MAX_GAMEROOM 5
 #define BUF 1024
 #define ROWS 6
 #define COLS 7
 #define INDENT "    "
 
+
+int users_in_room[MAX_GAMEROOM];
 int state = 0; //defines what to do (0 = menue, 1 = in game as player, 2 = in game as viewer)
 int run = 1;
 char *progname;
@@ -26,15 +30,17 @@ char *progname;
 char symbols[] = {' ', 'X', 'O', '4'};
 
 
+
 void printBoard(int board[6][7]);
 void error_exit(const char *msg);
 void usage();
 void *send_mesg(void *arg);
 void *recive_mesg(void* arg);
-void menue();   // TODO funciton when Player in menu modz
+void menue(FILE* server_sockfile);   // TODO funciton when Player in menu modz
 void game();    // TODO function when Player in game mode
 void get_user_input_to_server(char* buffer, FILE* server_sockfile);// TODO
 int start_server(int port);
+int check_userinput(int low, int high, char* input); //checks if correct input, only for int, needs range, returns input if correct or -1
 
 
 /* main */
@@ -128,6 +134,7 @@ void *send_mesg(void *arg)
 
   char buffer[100];
   char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
+  int input;
 
   sleep(1);
 
@@ -139,7 +146,13 @@ void *send_mesg(void *arg)
     {
       case 0:
         get_user_input_to_server(buffer, server_sockfile);
-        if(atoi(buffer) > 0) state = 1; //TODO idea: check if room is full, to get right state
+        input = atoi(buffer);  //TODO check input
+        if(users_in_room[input] > 2)
+        {
+          state = 2;
+        }else{
+          state = 1;
+        }
         break;
       case 1:
         get_user_input_to_server(buffer, server_sockfile);
@@ -169,7 +182,7 @@ void *recive_mesg(void* arg)
   char buffer[100];
   char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
 
-  int board[6][7];
+  int board[ROWS][COLS];
 
   //fread(board, sizeof(char), sizeof(board), server_sockfile);
 
@@ -180,9 +193,10 @@ void *recive_mesg(void* arg)
     switch(state)
     {
       case 0:
-        menue();
-        fread(buffer, sizeof(int), sizeof(board), server_sockfile);
-        break;
+        menue(server_sockfile);
+        fread(board, sizeof(int), sizeof(board), server_sockfile);
+        printBoard(board);
+      break;
       case 1:
         fread(board, sizeof(int), sizeof(board), server_sockfile);
 //        sleep(2);
@@ -192,12 +206,10 @@ void *recive_mesg(void* arg)
       case 2:
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
-         printf("you are a viewer, press 0 to leave\n\n");
+         printf("you are a spectator, press 0 to leave\n\n");
         break;
     }
   
-  //	  fgets(buffer, BUF, server_sockfile);
-  //	  printf("\ngot from server: %s", buffer);
   }
 
   run = 0;
@@ -206,11 +218,30 @@ void *recive_mesg(void* arg)
 }
 
 
-
-void menue()
+int check_userinput(int low, int high, char* input)
 {
+  
+}
+
+
+
+
+void menue(FILE* server_sockfile)
+{
+
   printf("\e[1;1H\e[2J");
   printf("---- Menu ---- \n Choose a room (1 - 5): ");
+
+
+  fread(users_in_room, sizeof(int), MAX_GAMEROOM, server_sockfile);
+
+
+  for(int i = 0; i<MAX_GAMEROOM; i++)
+  {
+//    fgets(buffer, BUF, server_sockfile);
+    printf("\n users in room %d: %d", i, users_in_room[i]);
+  }
+
 }
 
 
