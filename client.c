@@ -38,9 +38,9 @@ void *send_mesg(void *arg);
 void *recive_mesg(void* arg);
 void menue(FILE* server_sockfile);   // TODO funciton when Player in menu modz
 void game();    // TODO function when Player in game mode
-void get_user_input_to_server(char* buffer, FILE* server_sockfile);// TODO
+//void get_user_input_to_server(char* buffer, FILE* server_sockfile);// TODO
 int start_server(int port);
-int check_userinput(int low, int high, char* input); //checks if correct input, only for int, needs range, returns input if correct or -1
+int check_userinput(int low, int high, char* user_input); //checks if correct input, only for int, needs range, returns input if correct or -1
 
 
 /* main */
@@ -145,17 +145,36 @@ void *send_mesg(void *arg)
     switch(state)
     {
       case 0:
-        get_user_input_to_server(buffer, server_sockfile);
-        input = atoi(buffer);  //TODO check input
-        if(users_in_room[input] > 2)
+        fgets(buffer, BUF, stdin);
+
+        input = check_userinput(1, MAX_GAMEROOM, buffer);
+
+        if(input > 0)
         {
-          state = 2;
-        }else{
-          state = 1;
+          fputs(buffer, server_sockfile);
+          fflush(server_sockfile);
+          printf("\nwrote to server: %s\n", buffer);
+
+          if(users_in_room[input] > 2)
+          {
+            state = 2;
+          }else{
+            state = 1;
+          }
         }
         break;
       case 1:
-        get_user_input_to_server(buffer, server_sockfile);
+        fgets(buffer, BUF, stdin);
+
+        input = check_userinput(1, COLS, buffer);
+
+        if(input > 0)
+        {
+          fputs(buffer, server_sockfile);
+          fflush(server_sockfile);
+          printf("\nwrote to server: %s\n", buffer);
+        }
+//        get_user_input_to_server(buffer, server_sockfile);
         break;
       case 2:
         scanf("%d", &state);
@@ -218,9 +237,17 @@ void *recive_mesg(void* arg)
 }
 
 
-int check_userinput(int low, int high, char* input)
+int check_userinput(int low, int high, char* user_input)
 {
-  
+  int input = atoi(user_input);
+
+  if(input >= low && input <= high)
+  {
+    return input;
+  }else{
+    printf("choose number between %d and %d \n", low, high);
+    return -1;
+  }
 }
 
 
@@ -230,7 +257,7 @@ void menue(FILE* server_sockfile)
 {
 
   printf("\e[1;1H\e[2J");
-  printf("---- Menu ---- \n Choose a room (1 - 5): ");
+  printf("---- Menu ---- \n");
 
 
   fread(users_in_room, sizeof(int), MAX_GAMEROOM, server_sockfile);
@@ -239,9 +266,10 @@ void menue(FILE* server_sockfile)
   for(int i = 0; i<MAX_GAMEROOM; i++)
   {
 //    fgets(buffer, BUF, server_sockfile);
-    printf("\n users in room %d: %d", i, users_in_room[i]);
+    printf("\n users in room %d: %d", i+1, users_in_room[i]);
   }
 
+  printf("\nChoose a room (1 - 5): ");
 }
 
 
@@ -274,7 +302,7 @@ void printBoard(int board[6][7])
 
 
 
-
+/*
 void get_user_input_to_server(char* buffer, FILE* server_sockfile)
 {
   fgets(buffer, BUF, stdin);
@@ -283,7 +311,7 @@ void get_user_input_to_server(char* buffer, FILE* server_sockfile)
   printf("\nwrote to server: %s\n", buffer);
 }
 
-
+*/
 
 
 

@@ -204,22 +204,14 @@ void *handle_client(void *arg)
   {
     if(players[cur].room == 0) //player is in no room, send him room options
     {
-//      for(int i = 0; i< MAX_GAMEROOM; i++)
-//      {
-//        buffer[] = gameroom[3].users_in_room;
-//      }
 
-for(int i = 0; i<MAX_GAMEROOM; i++) printf("users in room: %d  ", users_in_room[i]);
+      for(int i = 0; i<MAX_GAMEROOM; i++) printf("users in room: %d  ", users_in_room[i]);
 
       fwrite(users_in_room, sizeof(int), MAX_GAMEROOM, players[cur].client_sockfile);
       fflush(players[cur].client_sockfile);
 
 
       message = fgets(buffer, sizeof(buffer), client_sockfile);
-      cur_room = atoi(message)-1;
-      players[cur].room = cur_room;
-      users_in_room[cur_room]++;
-      players[cur].player_room = users_in_room[cur_room];
 
 
       if (message == NULL)
@@ -228,11 +220,12 @@ for(int i = 0; i<MAX_GAMEROOM; i++) printf("users in room: %d  ", users_in_room[
 	printf("disconnect user %d\n", players[cur].player_nmbr);
 	break;
       }
-
-
       if(strcmp(buffer, "quit\n") == 0) break;
 
-
+      cur_room = atoi(message)-1;
+      players[cur].room = cur_room;
+      users_in_room[cur_room]++;
+      players[cur].player_room = users_in_room[cur_room];
     }
 
 
@@ -271,6 +264,8 @@ for(int i = 0; i<MAX_GAMEROOM; i++) printf("users in room: %d  ", users_in_room[
           clear_gameboard(cur_room);
           players[cur].room = 0;
           message = fgets(buffer, sizeof(buffer), client_sockfile); //wait till client leave room
+
+          users_in_room[cur_room] = 0;
 
           if (message == NULL)
           {
