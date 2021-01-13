@@ -19,6 +19,7 @@
 #define ROWS 6
 #define COLS 7
 #define MAX_ROUNDS 3 //defines rounds to play till win
+#define STATE 4 //State-row tells which player is allowed to play
 
 typedef struct
 {
@@ -26,7 +27,7 @@ typedef struct
 	int player_nmbr;        //checkt loggin
 	FILE *client_sockfile;
 	int room;               //tells which room, 0 = no room
-	int player_room;   //tells if player 1 or player 2 or higher than 2 == viewer
+	int player_room;   //tells 1 = player 1; 2 = player 2 or higher than 2 == viewer
 
 }player_t;
 
@@ -58,10 +59,12 @@ int users_in_room[MAX_GAMEROOM];
 
 	INFO COL = COLS, easy way to send data to client
 
-	last col row 0 = cur_round
-	 	 row 1 = victorys player X
-		 row 2 = victorys player O
- 		 more to come äääh 
+	last col 	row 0 = cur_round
+	 	 				row 1 = victorys player X
+		 				row 2 = victorys player O
+						row 3 = STATE = which player can play (1= Player 1/2 = Player 2) start value = 1;
+
+			 			more to come äääh 
 
 */
 
@@ -185,6 +188,8 @@ void *handle_client(void *arg)
   int cur_room = 0;
   int winner = 0;
 
+
+	//assigns every user a sockfd
   for(int i = 1; i < MAX_USER; i++)
   {
     if(players[i].player_nmbr < 0)
@@ -240,16 +245,15 @@ void *handle_client(void *arg)
     else //player is in room, send board
     {
 
-      //TODO
       //get_userinput(buffer, message, client_sockfile);
 
       gameroom[cur_room].gameboard[4][COLS] = 2;
 
       send_board_to_user(cur_room);
 
-
-      while(cur_round < MAX_ROUNDS){
-
+     
+      while(cur_round < MAX_ROUNDS)
+			{
         message = fgets(buffer, sizeof(buffer), client_sockfile);
 
         if (message == NULL)
@@ -261,15 +265,21 @@ void *handle_client(void *arg)
 
 
         if(strcmp(buffer, "quit\n") == 0) break;
-
+				
+				//sets the number of the player in the appropriate gameboard field
         setToken(message, cur_room, players[cur].player_room);
 
+				//serches for 4 tokens in a row, changes the four row to the number '4' and returns the number of the winning player
         winner = search_4_four(cur_room, players[cur].player_room);
+				
+				// switches the state of the player who is allowed to play
+				if(gameroom[cur_room].gameboard[STATE][COLS] == 1) gameroom[cur_room].gameboard[STATE][COLS] = 2;
+				else if(gameroom[cur_room].gameboard[STATE][COLS] == 2) gameroom[cur_room].gameboard[STATE][COLS] = 1;
 
-        if(winner > 0)gameroom[cur_room].gameboard[winner][COLS]++;
+
+        if(winner > 0) gameroom[cur_room].gameboard[winner][COLS]++;
 
         send_board_to_user(cur_room);
-
 
         if(winner > 0)
         {
@@ -278,12 +288,8 @@ void *handle_client(void *arg)
 
           printf("\n\n!!! We have a winner for the round: Player %d (%c)\n !!!", winner, symbols[winner]);
           clear_gameboard(cur_room, ROWS, COLS-1);
-//          players[cur].room = 0;
-
 
           message = fgets(buffer, sizeof(buffer), client_sockfile); //wait till client leave room
-
-//          users_in_room[cur_room] = 0;
 
           if (message == NULL)
           {

@@ -23,7 +23,8 @@
 
 
 int users_in_room[MAX_GAMEROOM];
-int state = 0; //defines what to do (0 = menue, 1 = in game as player, 2 = in game as viewer)
+int state = 0;          //defines what to do (0 = menue, 1 = in game as player, 2 = in game as viewer)
+int permission = 1;         //defines whose turn it is to play; 1 = player 1, 2 = player 2
 int run = 1;
 char *progname;
 
@@ -143,7 +144,7 @@ void *send_mesg(void *arg)
     //sleep(1);
     switch(state)
     {
-      case 0:
+      case 0:      //in menu
         fgets(buffer, BUF, stdin);
 
         input = check_userinput(1, MAX_GAMEROOM, buffer);
@@ -162,8 +163,11 @@ void *send_mesg(void *arg)
           }
         }
         break;
-      case 1:
+
+      case 1:       //in room as player
         fgets(buffer, BUF, stdin);
+        
+        //if(permission = Who_am_i) 
 
         input = check_userinput(1, COLS, buffer);
 
@@ -175,7 +179,8 @@ void *send_mesg(void *arg)
         }
 //        get_user_input_to_server(buffer, server_sockfile);
         break;
-      case 2:
+      
+      case 2:     //in room as a viewer
         scanf("%d", &state);
         break;
     }
@@ -210,24 +215,24 @@ void *recive_mesg(void* arg)
     //sleep(1);
     switch(state)
     {
-      case 0:
+      case 0:     //in menu
         menue(server_sockfile);
         fread(board, sizeof(int), sizeof(board), server_sockfile);
-//        sleep(2);
         printBoard(board);
         printf("you are a player\n");
-
       break;
-      case 1:
+
+      case 1:     //in game as player
         fread(board, sizeof(int), sizeof(board), server_sockfile);
-//        sleep(2);
         printBoard(board);
-        printf("you are a player\n");
+        permission = board[4][COLS];
+        printf("You are a player\n");
         break;
-      case 2:
+
+      case 2:     //in game as viewer
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
-         printf("you are a spectator, press 0 to leave\n\n");
+        printf("you are a spectator, press 0 to leave\n\n");
         break;
     }
   
@@ -246,7 +251,9 @@ int check_userinput(int low, int high, char* user_input)
   if(input >= low && input <= high)
   {
     return input;
-  }else{
+  }
+  else
+  {
     printf("choose number between %d and %d \n", low, high);
     return -1;
   }
