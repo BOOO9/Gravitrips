@@ -23,7 +23,7 @@
 
 
 int users_in_room[MAX_GAMEROOM];
-int state = 0;          //defines what to do (0 = menue, 1 = in game as player, 2 = in game as viewer)
+int state = 0;          //defines what to do (0 = menu, 1 = in game as player, 2 = in game as viewer)
 int permission = 1;         //defines whose turn it is to play; 1 = player 1, 2 = player 2
 int run = 1;
 char *progname;
@@ -36,7 +36,7 @@ void error_exit(const char *msg);
 void usage();
 void *send_mesg(void *arg);
 void *recive_mesg(void* arg);
-void menue(FILE* server_sockfile);   // TODO funciton when Player in menu modz
+void menu(FILE* server_sockfile);   // TODO funciton when Player in menu modz
 void game();    // TODO function when Player in game mode
 //void get_user_input_to_server(char* buffer, FILE* server_sockfile);// TODO
 int start_server(int port);
@@ -158,7 +158,9 @@ void *send_mesg(void *arg)
           if(users_in_room[input] > 2)
           {
             state = 2;
-          }else{
+          }
+          else
+          {
             state = 1;
           }
         }
@@ -167,7 +169,7 @@ void *send_mesg(void *arg)
       case 1:       //in room as player
         fgets(buffer, BUF, stdin);
         
-        //if(permission = Who_am_i) 
+        //if(permission = Who_am_i?????) TODO
 
         input = check_userinput(1, COLS, buffer);
 
@@ -212,11 +214,10 @@ void *recive_mesg(void* arg)
   while(1)
   {
 
-    //sleep(1);
     switch(state)
     {
-      case 0:     //in menu
-        menue(server_sockfile);
+      case 0:     //user is in menu
+        menu(server_sockfile);
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
         printf("you are a player\n");
@@ -262,7 +263,7 @@ int check_userinput(int low, int high, char* user_input)
 
 
 
-void menue(FILE* server_sockfile)
+void menu(FILE* server_sockfile)
 {
 
   printf("\e[1;1H\e[2J");
@@ -272,9 +273,8 @@ void menue(FILE* server_sockfile)
   fread(users_in_room, sizeof(int), MAX_GAMEROOM, server_sockfile);
 
 
-  for(int i = 0; i<MAX_GAMEROOM; i++)
+  for(int i = 0; i < MAX_GAMEROOM; i++)
   {
-//    fgets(buffer, BUF, server_sockfile);
     printf("\n users in room %d: %d", i+1, users_in_room[i]);
   }
 

@@ -189,7 +189,7 @@ void *handle_client(void *arg)
   int winner = 0;
 
 
-	//assigns every user a sockfd
+	//assigns to current user a sockfd
   for(int i = 1; i < MAX_USER; i++)
   {
     if(players[i].player_nmbr < 0)
@@ -218,11 +218,10 @@ void *handle_client(void *arg)
     if(players[cur].room == 0) //player is in no room, send him room options
     {
 
-      for(int i = 0; i<MAX_GAMEROOM; i++) printf("users in room: %d  ", users_in_room[i]);
+      for(int i = 0; i < MAX_GAMEROOM; i++) printf("users in room: %d  ", users_in_room[i]);
 
       fwrite(users_in_room, sizeof(int), MAX_GAMEROOM, players[cur].client_sockfile);
       fflush(players[cur].client_sockfile);
-
 
       message = fgets(buffer, sizeof(buffer), client_sockfile);
 
@@ -230,8 +229,8 @@ void *handle_client(void *arg)
       if (message == NULL)
       {
         printf("userinputt NULL\n");
-	printf("disconnect user %d\n", players[cur].player_nmbr);
-	break;
+				printf("disconnect user %d\n", players[cur].player_nmbr);
+				break;
       }
       if(strcmp(buffer, "quit\n") == 0) break;
 
