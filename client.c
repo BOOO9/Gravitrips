@@ -15,10 +15,11 @@
 
 /*declaration*/
 
-#define MAX_GAMEROOM 5
+#define MAX_GAMEROOM 6
 #define BUF 1024
 #define ROWS 6
 #define COLS 7
+#define MAX_ROUNDS 3
 #define INDENT "    "
 
 
@@ -32,6 +33,7 @@ char *progname;
 char symbols[] = {' ', 'X', 'O', '4'};
 
 
+void game_over();
 void printBoard(int board[ROWS][COLS+1]);
 void error_exit(const char *msg);
 void usage();
@@ -142,6 +144,8 @@ void *send_mesg(void *arg)
   while(1)
   {
 
+printf("\nSTATE = %d\n\n", state);
+
     //sleep(1);
     switch(state)
     {
@@ -156,7 +160,7 @@ void *send_mesg(void *arg)
           fflush(server_sockfile);
           printf("\nwrote to server: %s\n", buffer);
 
-          if(users_in_room[input] > 2)
+          if(users_in_room[input] >= 2)
           {
             state = 2;
           }
@@ -168,9 +172,7 @@ void *send_mesg(void *arg)
         break;
 
       case 1:       //in room as player
-        
         fgets(buffer, BUF, stdin);
-
         if(permission != who_am_i) 
         {
           printf("It's not your turn, pleas wait for your opponnent to play!\n");
@@ -178,7 +180,6 @@ void *send_mesg(void *arg)
         }
 
         input = check_userinput(1, COLS, buffer);
-        
 
         if(input > 0)
         {
@@ -187,13 +188,14 @@ void *send_mesg(void *arg)
           printf("\nWrote to server: %s\n", buffer);
         }
         break;
-      
+
       case 2:     //in room as a viewer
-        scanf("%d", &state);
+        fgets(buffer, BUF, stdin);
+        input = check_userinput(0, 0, buffer);
+	if(input == 0) state = 0;
+
         break;
     }
-
-
 
 
     if(strcmp(buffer, "quit\n") == 0) break;
@@ -227,7 +229,7 @@ void *recive_mesg(void* arg)
         fscanf(server_sockfile, "%d", &who_am_i); // tells if client is player 1/2 or viewer > 2
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
-        printf("you are a player\n");
+//        printf("you are a player\n");
         printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n!", who_am_i, permission); 
       break;
 
@@ -236,7 +238,12 @@ void *recive_mesg(void* arg)
         printBoard(board);
         permission = board[3][COLS];  //tells who has the permission to play
         printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n!", who_am_i, permission); 
-        break;
+	if(board[1][COLS]+board[2][COLS] == MAX_ROUNDS)
+        {
+          game_over();
+          state = 0;
+        }
+      break;
 
       case 2:     //in game as viewer
         fread(board, sizeof(int), sizeof(board), server_sockfile);
@@ -244,7 +251,7 @@ void *recive_mesg(void* arg)
         printf("you are a spectator, press 0 to leave\n\n");
         break;
     }
-  
+
   }
 
   run = 0;
@@ -268,7 +275,12 @@ int check_userinput(int low, int high, char* user_input)
   }
 }
 
-
+void game_over()
+{
+  printf("\e[1;1H\e[2J");
+  printf("GAME OVER\n\n");
+  printf("Press 0 to continue");
+}
 
 
 void menu(FILE* server_sockfile)
@@ -281,9 +293,9 @@ void menu(FILE* server_sockfile)
   fread(users_in_room, sizeof(int), MAX_GAMEROOM, server_sockfile);
 
 
-  for(int i = 0; i < MAX_GAMEROOM; i++)
+  for(int i = 1; i < MAX_GAMEROOM; i++)
   {
-    printf("\n users in room %d: %d", i+1, users_in_room[i]);
+    printf("\n users in room %d: %d", i, users_in_room[i]);
   }
 
   printf("\nChoose a room (1 - 5): ");

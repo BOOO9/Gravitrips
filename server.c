@@ -15,7 +15,7 @@
 
 #define BUF 1024
 #define MAX_USER 20
-#define MAX_GAMEROOM 5
+#define MAX_GAMEROOM 6 //gameroomm 0 = menue
 #define ROWS 6
 #define COLS 7
 #define MAX_ROUNDS 3 //defines rounds to play till win
@@ -60,12 +60,11 @@ int users_in_room[MAX_GAMEROOM];
 	INFO COL = COLS, easy way to send data to client
 
 	last col 	row 0 = cur_round
-	 	 				row 1 = victorys player X
-		 				row 2 = victorys player O
-						row 3 = STATE = which player can play (1= Player 1/2 = Player 2) start value = 1;
+			row 1 = victorys player X
+			row 2 = victorys player O
+			row 3 = STATE = which player can play (1= Player 1/2 = Player 2) start value = 1;
 
-			 			more to come äääh 
-
+			more to come äääh 
 */
 
 
@@ -150,9 +149,8 @@ void setToken(char col[], int room_nmbr, int player)
     if(gameroom[room_nmbr].gameboard[row][set] > 0) break;
   }
 
-	
 	//if(row == 0) printf("row is full");
-  
+
 	gameroom[room_nmbr].gameboard[row - 1][set] = player;
 
 
@@ -196,7 +194,7 @@ void *handle_client(void *arg)
   int winner = 0;
 
 
-	//assigns to current user a sockfd
+  //assigns to current user a sockfd
   for(int i = 1; i < MAX_USER; i++)
   {
     if(players[i].player_nmbr < 0)
@@ -218,8 +216,6 @@ void *handle_client(void *arg)
   char *message;
 
 
-  //  players[cur].room = a;
-
   while(1)
   {
     if(players[cur].room == 0) //player is in no room, send him room options
@@ -236,36 +232,29 @@ void *handle_client(void *arg)
       if (message == NULL)
       {
         printf("userinputt NULL\n");
-				printf("disconnect user %d\n", players[cur].player_nmbr);
-				break;
+	printf("disconnect user %d\n", players[cur].player_nmbr);
+	break;
       }
       if(strcmp(buffer, "quit\n") == 0) break;
 
-      cur_room = atoi(message)-1;
+      cur_room = atoi(message);
       players[cur].room = cur_room;
       users_in_room[cur_room]++;
       players[cur].player_room = users_in_room[cur_room];
-			
+
 			gameroom[cur_room].gameboard[STATE][COLS] = 1;
 			//gives the client his player number
 			fprintf(players[cur].client_sockfile, "%d", users_in_room[cur_room]);
 
 
     }
-
-
     else //player is in room, send board
     {
 
-      //get_userinput(buffer, message, client_sockfile);
+      while(cur_round < MAX_ROUNDS) //play three rounds, until game is over
+      {
+        send_board_to_user(cur_room);
 
-      gameroom[cur_room].gameboard[4][COLS] = 2;
-
-      send_board_to_user(cur_room);
-
-     
-      while(cur_round < MAX_ROUNDS)
-			{
         message = fgets(buffer, sizeof(buffer), client_sockfile);
 
         if (message == NULL)
@@ -275,15 +264,14 @@ void *handle_client(void *arg)
           goto client_left;
         }
 
-
         if(strcmp(buffer, "quit\n") == 0) break;
-				
-				//sets the number of the player in the appropriate gameboard field
+
+	//sets the number of the player in the appropriate gameboard field
         setToken(message, cur_room, players[cur].player_room);
 
-				//serches for 4 tokens in a row, changes the four row to the number '4' and returns the number of the winning player
+	//serches for 4 tokens in a row, changes the four row to the number '4' and returns the number of the winning player
         winner = search_4_four(cur_room, players[cur].player_room);
-				
+
         if(winner > 0) gameroom[cur_room].gameboard[winner][COLS]++;
 
         send_board_to_user(cur_room);
@@ -294,7 +282,7 @@ void *handle_client(void *arg)
           gameroom[cur_room].gameboard[0][COLS] = cur_round;
 
           printf("\n\n!!! We have a winner for the round: Player %d (%c)\n !!!", winner, symbols[winner]);
-          clear_gameboard(cur_room, ROWS, COLS-1);
+          clear_gameboard(cur_room, ROWS, COLS);
 
           message = fgets(buffer, sizeof(buffer), client_sockfile); //wait till client leave room
 
@@ -309,12 +297,13 @@ void *handle_client(void *arg)
 
 
       }//while round loop
-
+      clear_gameboard(cur_room, ROWS, COLS+1);
+      players[cur].room = 0; //player is in no room, send him room options
       cur_round = 0;
     }//else end
 
 
-    printf("\ngot from client usernmbr %d, fd %d: %s\n", cur, players[cur].player_nmbr, buffer);
+//    printf("\ngot from client usernmbr %d, fd %d: %s\n", cur, players[cur].player_nmbr, buffer);
   }
 
   client_left:
