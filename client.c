@@ -25,6 +25,7 @@
 int users_in_room[MAX_GAMEROOM];
 int state = 0;          //defines what to do (0 = menu, 1 = in game as player, 2 = in game as viewer)
 int permission = 1;         //defines whose turn it is to play; 1 = player 1, 2 = player 2
+int who_am_i = 0;
 int run = 1;
 char *progname;
 
@@ -167,9 +168,11 @@ void *send_mesg(void *arg)
         break;
 
       case 1:       //in room as player
-        fgets(buffer, BUF, stdin);
         
-        //if(permission = Who_am_i?????) TODO
+        //TODO fuck der scheiß geht nicht
+        if(permission != who_am_i) break;
+
+        fgets(buffer, BUF, stdin);
 
         input = check_userinput(1, COLS, buffer);
 
@@ -218,6 +221,7 @@ void *recive_mesg(void* arg)
     {
       case 0:     //user is in menu
         menu(server_sockfile);
+        fscanf(server_sockfile, "%d", &who_am_i); 
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
         printf("you are a player\n");
@@ -227,7 +231,7 @@ void *recive_mesg(void* arg)
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
         permission = board[4][COLS];
-        printf("You are a player\n");
+        printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n!", who_am_i, permission); 
         break;
 
       case 2:     //in game as viewer

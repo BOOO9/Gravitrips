@@ -238,6 +238,11 @@ void *handle_client(void *arg)
       players[cur].room = cur_room;
       users_in_room[cur_room]++;
       players[cur].player_room = users_in_room[cur_room];
+
+			//gives the client his player number
+			fprintf(players[cur].client_sockfile, "%d", users_in_room[cur_room]);
+
+
     }
 
 
@@ -273,8 +278,10 @@ void *handle_client(void *arg)
 				
 				// switches the state of the player who is allowed to play
 				if(gameroom[cur_room].gameboard[STATE][COLS] == 1) gameroom[cur_room].gameboard[STATE][COLS] = 2;
-				else if(gameroom[cur_room].gameboard[STATE][COLS] == 2) gameroom[cur_room].gameboard[STATE][COLS] = 1;
+				//else if(gameroom[cur_room].gameboard[STATE][COLS] == 2) gameroom[cur_room].gameboard[STATE][COLS] = 1;
+				else gameroom[cur_room].gameboard[STATE][COLS] = 1;
 
+				printf("\n\nPERMISSION is : --%d--\n\n", gameroom[cur_room].gameboard[STATE][COLS]);
 
         if(winner > 0) gameroom[cur_room].gameboard[winner][COLS]++;
 
@@ -399,68 +406,6 @@ int mark_four(int room_nbr, int rs, int cs, int dr, int dc)
         gameroom[room_nbr].gameboard[rs+i*dr][cs+i*dc] += 2;
 }
 
-/*
-int search_4_four(int room_nbr, int player)
-{
-    int i, j;
-
-		//int Grid[6][7] = gameroom[room_nbr].gameboard;
-     
-    // Suche waagrecht    
-    for (i = 0; i < ROWS; i++)
-    {
-        for (j = 0; j < COLS - 3; j++)
-        {
-            if (Grid[i][j] == player && Grid[i][j+1] == player && Grid[i][j+2] == player && Grid[i][j+3] == player ) 
-            {
-                mark_four(room_nbr, i, j, 0, +1);
-                return player; 
-            }
-        }
-    }
-
-    // Suche senkrecht    
-    for (j=0; j<COLS; j++)
-    {    
-        for (i=0; i<ROWS-3; i++)
-        {
-            if (Grid[i][j] == player && Grid[i+1][j] == player && Grid[i+2][j] == player && Grid[i+3][j] == player ) 
-            {
-                mark_four(room_nbr, i, j, +1, 0);
-                return player; 
-            }
-        }
-    }
-
-    // Suche diagonal '\'   
-    for(i=0; i<ROWS-3; i++)
-    {
-        for(j=0; j<COLS-3; j++)
-        {
-            if(Grid[i][j] == player && Grid[i+1][j+1] == player && Grid[i+2][j+2] == player && Grid[i+3][j+3] == player )
-            {
-                mark_four(room_nbr, i, j, +1, +1);
-                return player; 
-            }
-        }
-    }
-
-    // Suche diagonal '/'
-    for (i=0; i<ROWS-3; i++)
-    {
-        for (j=COLS-4; j<COLS; j++)
-        {
-            if (Grid[i][j] == player && Grid[i+1][j-1] == player && Grid[i+2][j-2] == player && Grid[i+3][j-3] == player)
-            {
-                mark_four(room_nbr, i, j, +1, -1);
-                return player;
-            }
-        }
-    }
-
-    return 0;
-}
-*/
 
 int search_4_four(int room_nbr, int player)
 {
