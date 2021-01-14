@@ -19,7 +19,7 @@
 #define ROWS 6
 #define COLS 7
 #define MAX_ROUNDS 3 //defines rounds to play till win
-#define STATE 4 //State-row tells which player is allowed to play
+#define STATE 3 //State-row tells which player is allowed to play
 
 typedef struct
 {
@@ -92,7 +92,6 @@ void send_board_to_user(int cur_room);
 
 int main(int argc, char **argv)
 {
-printf("%d",COLS+1 );
 
   for(int i = 0; i <= MAX_USER; i++)
   {
@@ -140,13 +139,21 @@ void setToken(char col[], int room_nmbr, int player)
 
   printf("FIELD int: %d // player_nbr: %d\n", set, player);
 
+	// switches the state of the player who is allowed to play
+	if(gameroom[room_nmbr].gameboard[STATE][COLS] == 1) gameroom[room_nmbr].gameboard[STATE][COLS] = 2;
+	else if(gameroom[room_nmbr].gameboard[STATE][COLS] == 2) gameroom[room_nmbr].gameboard[STATE][COLS] = 1;
+
+
 
   for(row = 0; row < ROWS; row++)
   {
     if(gameroom[room_nmbr].gameboard[row][set] > 0) break;
   }
 
-  gameroom[room_nmbr].gameboard[row - 1][set] = player;
+	
+	//if(row == 0) printf("row is full");
+  
+	gameroom[room_nmbr].gameboard[row - 1][set] = player;
 
 
  //DEBUG printf gemeboard:
@@ -238,7 +245,8 @@ void *handle_client(void *arg)
       players[cur].room = cur_room;
       users_in_room[cur_room]++;
       players[cur].player_room = users_in_room[cur_room];
-
+			
+			gameroom[cur_room].gameboard[STATE][COLS] = 1;
 			//gives the client his player number
 			fprintf(players[cur].client_sockfile, "%d", users_in_room[cur_room]);
 
@@ -276,13 +284,6 @@ void *handle_client(void *arg)
 				//serches for 4 tokens in a row, changes the four row to the number '4' and returns the number of the winning player
         winner = search_4_four(cur_room, players[cur].player_room);
 				
-				// switches the state of the player who is allowed to play
-				if(gameroom[cur_room].gameboard[STATE][COLS] == 1) gameroom[cur_room].gameboard[STATE][COLS] = 2;
-				//else if(gameroom[cur_room].gameboard[STATE][COLS] == 2) gameroom[cur_room].gameboard[STATE][COLS] = 1;
-				else gameroom[cur_room].gameboard[STATE][COLS] = 1;
-
-				printf("\n\nPERMISSION is : --%d--\n\n", gameroom[cur_room].gameboard[STATE][COLS]);
-
         if(winner > 0) gameroom[cur_room].gameboard[winner][COLS]++;
 
         send_board_to_user(cur_room);

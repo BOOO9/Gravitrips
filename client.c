@@ -169,20 +169,23 @@ void *send_mesg(void *arg)
 
       case 1:       //in room as player
         
-        //TODO fuck der scheiß geht nicht
-        if(permission != who_am_i) break;
-
         fgets(buffer, BUF, stdin);
 
+        if(permission != who_am_i) 
+        {
+          printf("It's not your turn, pleas wait for your opponnent to play!\n");
+          break;
+        }
+
         input = check_userinput(1, COLS, buffer);
+        
 
         if(input > 0)
         {
           fputs(buffer, server_sockfile);
           fflush(server_sockfile);
-          printf("\nwrote to server: %s\n", buffer);
+          printf("\nWrote to server: %s\n", buffer);
         }
-//        get_user_input_to_server(buffer, server_sockfile);
         break;
       
       case 2:     //in room as a viewer
@@ -221,16 +224,17 @@ void *recive_mesg(void* arg)
     {
       case 0:     //user is in menu
         menu(server_sockfile);
-        fscanf(server_sockfile, "%d", &who_am_i); 
+        fscanf(server_sockfile, "%d", &who_am_i); // tells if client is player 1/2 or viewer > 2
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
         printf("you are a player\n");
+        printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n!", who_am_i, permission); 
       break;
 
       case 1:     //in game as player
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
-        permission = board[4][COLS];
+        permission = board[3][COLS];  //tells who has the permission to play
         printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n!", who_am_i, permission); 
         break;
 
