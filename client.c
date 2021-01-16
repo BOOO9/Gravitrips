@@ -28,13 +28,12 @@ int users_in_room[MAX_GAMEROOM];
 int state = 0;          //defines what to do (0 = menu, 1 = in game as player, 2 = in game as viewer)
 int permission = 1;         //defines whose turn it is to play; 1 = player 1, 2 = player 2
 int who_am_i = 0;
-int run = 1;
 char *progname;
+char *ip_adress;
 
 char symbols[] = {' ', 'X', 'O', '4'};
 
 
-void game_over();
 void printBoard(int board[ROWS][COLS+1]);
 void error_exit(const char *msg);
 void usage();
@@ -42,7 +41,6 @@ void *send_mesg(void *arg);
 void *recive_mesg(void* arg);
 void menu(FILE* server_sockfile);   // TODO funciton when Player in menu modz
 void game();    // TODO function when Player in game mode
-//void get_user_input_to_server(char* buffer, FILE* server_sockfile);// TODO
 int start_server(int port);
 int check_userinput(int low, int high, char* user_input); //checks if correct input, only for int, needs range, returns input if correct or -1
 
@@ -50,13 +48,21 @@ int check_userinput(int low, int high, char* user_input); //checks if correct in
 /* main */
 int main(int argc, char **argv) //TODO start_server funciton um die main kürzer zu machen
 {
+  int port;
 
-  if (argc < 2)
+  if(argc < 2 || argc > 3)
   {
     usage();
   }
+  if(argc == 2)
+  {
+    port = atoi(argv[1]);
+    ip_adress = "127.0.0.1";
+  }else{
+    ip_adress = argv[1];
+    port = atoi(argv[2]);
+  }
 
-  int port = atoi(argv[1]);
 
   int server_sockfd = start_server(port);
 
@@ -79,10 +85,6 @@ int main(int argc, char **argv) //TODO start_server funciton um die main kürzer
   pthread_join(thread_send_mesg, NULL);
   pthread_join(thread_recive_mesg, NULL);
 
-
-
-  //while(run);// sleep(2);
-
   return EXIT_SUCCESS;
 }
 
@@ -98,7 +100,7 @@ void error_exit(const char *msg)
 
 void usage()
 {
-  fprintf(stderr, "Usage: %s address port\n", progname);
+  fprintf(stderr, "Usage: %s [ip address] [port]\n", progname);
   exit(EXIT_FAILURE);
 }
 
@@ -115,8 +117,7 @@ int start_server(int port)
 
   address.sin_family = AF_INET;
   address.sin_port = port;
-  //to choose the ipadress: inet_aton(argv[1], &address.sin_addr);
-  address.sin_addr.s_addr = inet_addr("127.0.0.1");
+  address.sin_addr.s_addr = inet_addr(ip_adress);
 
   if (connect(server_sockfd, (struct sockaddr *)&address, sizeof(address)) == 0)
   {
@@ -137,30 +138,24 @@ void *send_mesg(void *arg)
   FILE *server_sockfile = fdopen(server_sockfd, "r+");
 
   char buffer[100];
-  //  char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
   int input;
 
   sleep(1);
 
   while(1)
   {
-
-  // pthread_mutex_lock(&client_mutex);
-
     switch(state)
     {
       case 0:      //in menu
-        
+
         fgets(buffer, BUF, stdin);
 
-        input = check_userinput(1, MAX_GAMEROOM, buffer);
+        input = check_userinput(1, MAX_GAMEROOM-1, buffer);
 
         if(input > 0)
         {
           fputs(buffer, server_sockfile);
           fflush(server_sockfile);
-
-
           if(users_in_room[input] >= 2)
           {
             state = 2;
@@ -177,13 +172,12 @@ void *send_mesg(void *arg)
         break;
 
       case 1:       //in room as player
-
-        if((board[1][COLS] + board[2][COLS]) == (board[4][COLS])) break;
-
         fgets(buffer, BUF, stdin);
 
+        if(board[1][COLS] + board[2][COLS] == board[4][COLS] || board[0][COLS] == -1) break;
+
         permission = board[3][COLS];  //tells who has the permission to play
-        
+
         if(permission != who_am_i)
         {
           printf("It's not your turn, please wait for your opponnent to play!\n");
@@ -191,39 +185,25 @@ void *send_mesg(void *arg)
         }
 
         input = check_userinput(1, COLS, buffer);
-        
-        
 
         if(input > 0 && (board[1][COLS]+board[2][COLS]) < board[4][COLS])
         {
-          printf("i am in if send to server\n\n");
           fputs(buffer, server_sockfile);
           fflush(server_sockfile);
-          printf("\nWrote to server: %s\n", buffer);
         }
         break;
 
       case 2:     //in room as a viewer
-        fgets(buffer, BUF, stdin);
-  //        input = check_userinput(0, 0, buffer);
-
-  //        if(input == 0) state = 0;
-
-  //        fputs(buffer, server_sockfile);
-  //        fflush(server_sockfile);
-        
+        sleep(3); //TODO suabere lösung
         break;
     }
 
-  //pthread_mutex_unlock(&client_mutex);
     if(strcmp(buffer, "quit\n") == 0) break;
 
-    if(board[1][COLS] + board[2][COLS] == board[4][COLS]) break;
+//    if(board[1][COLS] + board[2][COLS] == board[4][COLS]) break;
 
   }
 
-
-  run = 0;
   //  fclose(server_sockfile);
 
   return 0;
@@ -235,17 +215,8 @@ void *recive_mesg(void* arg)
 
   FILE *server_sockfile = fdopen(server_sockfd, "r+");
 
-  char buffer[100];
-  //  char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
-
-
-  //fread(board, sizeof(char), sizeof(board), server_sockfile);
-
   while(1)
   {
-
-  //    pthread_mutex_lock(&client_mutex);
-
 
     switch(state) {
        case 0: //user is in menu
@@ -255,28 +226,33 @@ void *recive_mesg(void* arg)
         fscanf(server_sockfile, "%d", &who_am_i); // tells if client is player 1/2 or viewer > 2
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
-        printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
-        printf("state = %d\n\n", state);
-        state = 1;
 
+        if(who_am_i < 3)
+        {
+        printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
+        }else{printf("you are a spectator\n\n");}
       break;
 
       case 1:     //in game as player
-          
 
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
         permission = board[3][COLS];  //tells who has the permission to play
-        printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
-        
+
         if(board[1][COLS]+board[2][COLS] == board[4][COLS])
         {
           printf("\n***GAME OVER***\n");
-          fgets(buffer, BUF, stdin);
-
+          printf("Press Enter to leave\n\n");
           goto end;
-
         }
+        if(board[0][COLS] == -1)
+        {
+          printf("\n***GAME OVER***\n");
+          printf("\nYour opponend is gay and left, you win\n\n");
+          goto end;
+        }
+
+        printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
 
       break;
 
@@ -285,26 +261,29 @@ void *recive_mesg(void* arg)
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
         printf("you are a spectator\n\n");
-        if(board[1][COLS]+board[2][COLS] == board[4][COLS])
+        if(board[1][COLS]+board[2][COLS] == board[4][COLS] || board[0][COLS] == -1)
         {
-          printf("game over");
-          fgets(buffer, BUF, stdin);
-
+          printf("\n***GAME OVER***\n");
+          goto end;
+        }
+        if(board[1][COLS]+board[2][COLS] == board[4][COLS] || board[0][COLS] == -1)
+        {
+          printf("\n***GAME OVER***\n");
+          printf("\nA player left\n\n");
           goto end;
         }
 
         break;
     }
-  //pthread_mutex_unlock(&client_mutex);
-
   }
   end:
-  run = 0;
 
   fclose(server_sockfile);
 
   return 0;
 }
+
+
 
 
 int check_userinput(int low, int high, char* user_input)
@@ -322,12 +301,6 @@ int check_userinput(int low, int high, char* user_input)
   }
 }
 
-void game_over()
-{
-  //  system("cls");
-
-  printf("GAME OVER, Press 0 to continue");
-}
 
 
 void menu(FILE* server_sockfile)
@@ -375,7 +348,7 @@ void printBoard(int board[ROWS][COLS+1])
 
   printf("\t  ---------------\n\n");
 
-  printf("Round %d, Player X victories: %d, Player O victories: %d\n\n",board[0][COLS]+1, board[1][COLS], board[2][COLS]);
+  printf("Round %d of %d, Player X victories: %d, Player O victories: %d\n\n",board[0][COLS]+1, board[4][COLS],board[1][COLS], board[2][COLS]);
 }
 
 

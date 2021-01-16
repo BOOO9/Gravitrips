@@ -218,15 +218,10 @@ void *handle_client(void *arg)
   {
     if(players[cur].room == 0) //player is in no room, send him room options
     {
-
-
       fwrite(users_in_room, sizeof(int), sizeof(users_in_room), players[cur].client_sockfile);
       fflush(players[cur].client_sockfile);
 
-
-
       message = fgets(buffer, sizeof(buffer), client_sockfile);
-
 
       if (message == NULL)
       {
@@ -265,6 +260,8 @@ void *handle_client(void *arg)
         {
           printf("userinputt NULL\n");
           printf("disconnect user %d\n", players[cur].player_nmbr);
+          gameroom[cur_room].gameboard[0][COLS] = -1;
+          send_board_to_user(cur_room);
           goto client_left;
         }
 
@@ -292,7 +289,7 @@ void *handle_client(void *arg)
           gameroom[cur_room].gameboard[0][COLS] = cur_round;
 
           printf("\n\n!!! We have a winner for the round: Player %d (%c)\n !!!", winner, symbols[winner]);
-          
+
           clear_gameboard(cur_room, ROWS, COLS);
 
           message = fgets(buffer, sizeof(buffer), client_sockfile); //wait till client leave room
@@ -307,7 +304,7 @@ void *handle_client(void *arg)
         }
 
       }//while round loop
-      
+
       if(players[cur].room > 0)
       {
         clear_gameboard(cur_room, ROWS, COLS+1);
