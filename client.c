@@ -181,14 +181,15 @@ void *send_mesg(void *arg)
         permission = board[3][COLS];  //tells who has the permission to play
         if(permission != who_am_i)
         {
-          printf("It's not your turn, pleas wait for your opponnent to play!\n");
+          printf("It's not your turn, please wait for your opponnent to play!\n");
           break;
         }
 
         input = check_userinput(1, COLS, buffer);
-
-        if(input > 0 && board[1][COLS]+board[2][COLS] < board[4][COLS])
+        printf("GNU out of if");
+        if(input > 0 && (board[1][COLS]+board[2][COLS]) < board[4][COLS])
         {
+          printf("i am in if send to server");
           fputs(buffer, server_sockfile);
           fflush(server_sockfile);
           printf("\nWrote to server: %s\n", buffer);
@@ -320,7 +321,7 @@ void menu(FILE* server_sockfile)
 {
 
 //  system("cls");
-  printf("\e[1;1H\e[2J");
+//  printf("\e[1;1H\e[2J");
 
   printf("---- Menu ---- \n");
 
@@ -338,7 +339,7 @@ void printBoard(int board[ROWS][COLS+1])
   int i = 0;
   int j = 0;
 
-  printf("\e[1;1H\e[2J");
+//  printf("\e[1;1H\e[2J");
 //  system("cls");
 
   printf(" \t  ");

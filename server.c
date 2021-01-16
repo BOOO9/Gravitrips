@@ -256,7 +256,7 @@ void *handle_client(void *arg)
       while(cur_round < max_rounds) //play three rounds, until game is over
       {
 
-
+        printf("in round loop");
         send_board_to_user(cur_room);
 
         message = fgets(buffer, sizeof(buffer), client_sockfile);
