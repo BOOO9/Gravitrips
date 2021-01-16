@@ -144,7 +144,6 @@ void *send_mesg(void *arg)
   while(1)
   {
 
-printf("\nSTATE = %d\n\n", state);
 
     switch(state)
     {
@@ -157,7 +156,7 @@ printf("\nSTATE = %d\n\n", state);
         {
           fputs(buffer, server_sockfile);
           fflush(server_sockfile);
-//          printf("\nwrote to server: %s\n", buffer);
+
 
           if(users_in_room[input] >= 2)
           {
@@ -191,8 +190,12 @@ printf("\nSTATE = %d\n\n", state);
       case 2:     //in room as a viewer
         fgets(buffer, BUF, stdin);
         input = check_userinput(0, 0, buffer);
-	if(input == 0) state = 0;
+        
+        if(input == 0) state = 0;
 
+        fputs(buffer, server_sockfile);
+        fflush(server_sockfile);
+        
         break;
     }
 
@@ -232,14 +235,14 @@ void *recive_mesg(void* arg)
         fscanf(server_sockfile, "%d", &who_am_i); // tells if client is player 1/2 or viewer > 2
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
-        printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n!", who_am_i, permission); 
+        printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
       break;
 
       case 1:     //in game as player
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
         permission = board[3][COLS];  //tells who has the permission to play
-        printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n!", who_am_i, permission); 
+        printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
 	if(board[1][COLS]+board[2][COLS] == MAX_ROUNDS)
         {
     //      game_over();
