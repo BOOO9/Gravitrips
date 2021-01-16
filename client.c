@@ -271,7 +271,7 @@ void *recive_mesg(void* arg)
         
         if(board[1][COLS]+board[2][COLS] == board[4][COLS])
         {
-          printf("game over");
+          printf("\n***GAME OVER***\n");
           fgets(buffer, BUF, stdin);
 
           goto end;
