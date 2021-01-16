@@ -24,7 +24,7 @@
 
 
 int users_in_room[MAX_GAMEROOM];
-int state = 0;          //defines what to do (0 = menu, 1 = in game as player, 2 = in game as viewer)
+//int state = 0;          //defines what to do (0 = menu, 1 = in game as player, 2 = in game as viewer)
 int permission = 1;         //defines whose turn it is to play; 1 = player 1, 2 = player 2
 int who_am_i = 0;
 int run = 1;
@@ -138,6 +138,7 @@ void *send_mesg(void *arg)
   char buffer[100];
   char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
   int input;
+  int state = 0;
 
   sleep(1);
 
@@ -217,6 +218,7 @@ void *recive_mesg(void* arg)
 
   char buffer[100];
   char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
+  int state = 0;
 
   int board[ROWS][COLS+1];
 
@@ -252,7 +254,7 @@ void *recive_mesg(void* arg)
           who_am_i = 1;
           state = 0;
         }
-        
+
       break;
 
       case 2:     //in game as viewer
