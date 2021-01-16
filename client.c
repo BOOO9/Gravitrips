@@ -22,7 +22,9 @@
 #define MAX_ROUNDS 3
 #define INDENT "    "
 
+pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+int board[ROWS][COLS+1];
 int users_in_room[MAX_GAMEROOM];
 int state = 0;          //defines what to do (0 = menu, 1 = in game as player, 2 = in game as viewer)
 int permission = 1;         //defines whose turn it is to play; 1 = player 1, 2 = player 2
@@ -136,7 +138,7 @@ void *send_mesg(void *arg)
   FILE *server_sockfile = fdopen(server_sockfd, "r+");
 
   char buffer[100];
-  char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
+//  char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
   int input;
 
   sleep(1);
@@ -144,6 +146,7 @@ void *send_mesg(void *arg)
   while(1)
   {
 
+// pthread_mutex_lock(&client_mutex);
 
     switch(state)
     {
@@ -170,7 +173,13 @@ void *send_mesg(void *arg)
         break;
 
       case 1:       //in room as player
+	
+	if(board[1][COLS]+board[2][COLS] == MAX_ROUNDS) break;
+
         fgets(buffer, BUF, stdin);
+
+
+        permission = board[3][COLS];  //tells who has the permission to play
         if(permission != who_am_i)
         {
           printf("It's not your turn, pleas wait for your opponnent to play!\n");
@@ -199,13 +208,15 @@ void *send_mesg(void *arg)
         break;
     }
 
-
+//pthread_mutex_unlock(&client_mutex);
     if(strcmp(buffer, "quit\n") == 0) break;
 
   }
 
   run = 0;
   fclose(server_sockfile);
+
+  return 0;
 }
 
 void *recive_mesg(void* arg)
@@ -214,23 +225,22 @@ void *recive_mesg(void* arg)
 
   FILE *server_sockfile = fdopen(server_sockfd, "r+");
 
-  char buffer[100];
-  char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
+//  char buffer[100];
+//  char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
 
-  int board[ROWS][COLS+1];
 
   //fread(board, sizeof(char), sizeof(board), server_sockfile);
 
   while(1)
   {
 
-    switch(state)
-    {
-      case 0:     //user is in menu
+//    pthread_mutex_lock(&client_mutex);
+
+
+    switch(state) {
+       case 0: //user is in menu
 
         fread(users_in_room, sizeof(int), sizeof(users_in_room), server_sockfile);
-
-
         menu(server_sockfile);
         fscanf(server_sockfile, "%d", &who_am_i); // tells if client is player 1/2 or viewer > 2
         fread(board, sizeof(int), sizeof(board), server_sockfile);
@@ -258,6 +268,7 @@ void *recive_mesg(void* arg)
         printf("you are a spectator, press 0 to leave\n\n");
         break;
     }
+//pthread_mutex_unlock(&client_mutex);
 
   }
 
@@ -284,7 +295,8 @@ int check_userinput(int low, int high, char* user_input)
 
 void game_over()
 {
-  printf("\e[1;1H\e[2J");
+  system("cls");
+
   printf("GAME OVER, Press 0 to continue");
 }
 
@@ -292,7 +304,8 @@ void game_over()
 void menu(FILE* server_sockfile)
 {
 
-  printf("\e[1;1H\e[2J");
+  system("cls");
+
   printf("---- Menu ---- \n");
 
   for(int i = 1; i < MAX_GAMEROOM; i++)
@@ -309,9 +322,10 @@ void printBoard(int board[ROWS][COLS+1])
   int i = 0;
   int j = 0;
 
-  printf("\e[1;1H\e[2J");
+//  printf("\e[1;1H\e[2J");
+  system("cls");
 
-printf(" \t  ");
+  printf(" \t  ");
 
   for(i = 1; i <= COLS; i++)
     printf("|%d", i);
@@ -325,7 +339,8 @@ printf(" \t  ");
 
     for (j = 0; j < COLS; j++) printf("|%c", symbols[board[i][j]]);
 
-    printf("|\n");
+    printf("|  INFO %d\n", board[i][COLS]);
+
   }
 
   printf("\t  ---------------\n\n");

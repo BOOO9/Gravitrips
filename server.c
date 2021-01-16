@@ -83,7 +83,7 @@ void error_exit(const char *msg);
 void usage();
 void *handle_client(void *arg);
 int start_server(int port);
-int mark_four(int room_nbr, int rs, int cs, int dr, int dc);
+void mark_four(int room_nbr, int rs, int cs, int dr, int dc);
 int search_4_four(int room_nmbr, int player);
 void send_board_to_user(int cur_room);
 
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 
   for(int i = 0; i < MAX_GAMEROOM; i++)
   {
-    clear_gameboard(i, ROWS, COLS+1);
+    clear_gameboard(i, ROWS, COLS);
     gameroom[i].gameboard[STATE][COLS] = 1;
     users_in_room[i] = 0;
   }
@@ -241,7 +241,7 @@ void *handle_client(void *arg)
       users_in_room[cur_room]++;
       players[cur].player_room = users_in_room[cur_room];
 
-      
+
 
       //gives the client his player number
       fprintf(players[cur].client_sockfile, "%d", users_in_room[cur_room]);
@@ -315,7 +315,7 @@ void *handle_client(void *arg)
         players[cur].room = 0; //player is in no room, send him room options
         cur_round = 0;
         users_in_room[cur_room] = 0;
-      }
+      }else{}
 
     }
 
@@ -326,6 +326,8 @@ void *handle_client(void *arg)
   client_left:
 
   clear_gameboard(cur_room, ROWS, COLS+1);
+  gameroom[cur_room].gameboard[STATE][COLS] = 1;
+
 
   players[cur].room = 0; //player is in no room, send him room options
   cur_round = 0;
@@ -337,6 +339,8 @@ void *handle_client(void *arg)
   players[cur].player_nmbr = -1;
 
   fclose(players[cur].client_sockfile);
+
+  return 0;
 }
 
 
@@ -346,7 +350,6 @@ int start_server(int port)
 {
   int server_sockfd, client_sockfd;
   socklen_t addrlen;
-  ssize_t size;
   struct sockaddr_in address;
 
   if ((server_sockfd =
@@ -392,6 +395,10 @@ int start_server(int port)
   sleep(1);
   }
   close(server_sockfd);
+
+
+  return 0;
+
 }
 
 
@@ -411,7 +418,7 @@ void send_board_to_user(int cur_room)
 
 
 
-int mark_four(int room_nbr, int rs, int cs, int dr, int dc)
+void mark_four(int room_nbr, int rs, int cs, int dr, int dc)
 {
     int i;
 
