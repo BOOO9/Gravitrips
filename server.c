@@ -232,9 +232,9 @@ void *handle_client(void *arg)
       {
         printf("userinputt NULL\n");
         printf("disconnect user %d\n", players[cur].player_nmbr);
-        break;
+        goto client_left;
       }
-      if(strcmp(buffer, "quit\n") == 0) break;
+      if(strcmp(buffer, "quit\n") == 0) goto client_left;
 
       cur_room = atoi(message);
       players[cur].room = cur_room;
@@ -315,13 +315,13 @@ void *handle_client(void *arg)
         players[cur].room = 0; //player is in no room, send him room options
         cur_round = 0;
         users_in_room[cur_room] = 0;
-      }else{}
+      }
+      goto client_left;
 
     }
 
 
-
-  }
+ }
 
   client_left:
 

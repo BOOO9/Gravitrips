@@ -188,7 +188,7 @@ void *send_mesg(void *arg)
 
         input = check_userinput(1, COLS, buffer);
 
-        if(input > 0)
+        if(input > 0 && board[1][COLS]+board[2][COLS] < MAX_ROUNDS)
         {
           fputs(buffer, server_sockfile);
           fflush(server_sockfile);
@@ -202,19 +202,21 @@ void *send_mesg(void *arg)
         
         if(input == 0) state = 0;
 
-        fputs(buffer, server_sockfile);
-        fflush(server_sockfile);
+//        fputs(buffer, server_sockfile);
+//        fflush(server_sockfile);
         
         break;
     }
 
 //pthread_mutex_unlock(&client_mutex);
     if(strcmp(buffer, "quit\n") == 0) break;
+    if(board[1][COLS]+board[2][COLS] == MAX_ROUNDS)break;
 
   }
 
+
   run = 0;
-  fclose(server_sockfile);
+//  fclose(server_sockfile);
 
   return 0;
 }
@@ -225,7 +227,7 @@ void *recive_mesg(void* arg)
 
   FILE *server_sockfile = fdopen(server_sockfd, "r+");
 
-//  char buffer[100];
+  char buffer[100];
 //  char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
 
 
@@ -255,10 +257,14 @@ void *recive_mesg(void* arg)
         printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
 	if(board[1][COLS]+board[2][COLS] == MAX_ROUNDS)
         {
+          printf("game over");
+          fgets(buffer, BUF, stdin);
+
+          goto end;
     //      game_over();
-          permission = 1;
-	  who_am_i = 1;
-          state = 0;
+    //      permission = 1;
+//	  who_am_i = 1;
+ //         state = 0;
         }
       break;
 
@@ -271,7 +277,7 @@ void *recive_mesg(void* arg)
 //pthread_mutex_unlock(&client_mutex);
 
   }
-
+  end:
   run = 0;
 
   fclose(server_sockfile);
@@ -295,7 +301,7 @@ int check_userinput(int low, int high, char* user_input)
 
 void game_over()
 {
-  system("cls");
+//  system("cls");
 
   printf("GAME OVER, Press 0 to continue");
 }
@@ -304,7 +310,8 @@ void game_over()
 void menu(FILE* server_sockfile)
 {
 
-  system("cls");
+//  system("cls");
+  printf("\e[1;1H\e[2J");
 
   printf("---- Menu ---- \n");
 
@@ -322,8 +329,8 @@ void printBoard(int board[ROWS][COLS+1])
   int i = 0;
   int j = 0;
 
-//  printf("\e[1;1H\e[2J");
-  system("cls");
+  printf("\e[1;1H\e[2J");
+//  system("cls");
 
   printf(" \t  ");
 
