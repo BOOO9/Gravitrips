@@ -24,7 +24,7 @@
 
 
 int users_in_room[MAX_GAMEROOM];
-int state = 0;          //defines what to do (0 = menu, 1 = in game as player, 2 = in game as viewer)
+//int state = 0;          //defines what to do (0 = menu, 1 = in game as player, 2 = in game as viewer)
 int permission = 1;         //defines whose turn it is to play; 1 = player 1, 2 = player 2
 int who_am_i = 0;
 int run = 1;
@@ -138,6 +138,7 @@ void *send_mesg(void *arg)
   char buffer[100];
   char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
   int input;
+  int state = 0;
 
   sleep(1);
 
@@ -171,6 +172,7 @@ void *send_mesg(void *arg)
 
       case 1:       //in room as player
         fgets(buffer, BUF, stdin);
+
         if(permission != who_am_i)
         {
           printf("It's not your turn, pleas wait for your opponnent to play!\n");
@@ -216,6 +218,7 @@ void *recive_mesg(void* arg)
 
   char buffer[100];
   char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
+  int state = 0;
 
   int board[ROWS][COLS+1];
 
@@ -243,13 +246,15 @@ void *recive_mesg(void* arg)
         printBoard(board);
         permission = board[3][COLS];  //tells who has the permission to play
         printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
-	if(board[1][COLS]+board[2][COLS] == MAX_ROUNDS)
+        
+        if(board[1][COLS] + board[2][COLS] == MAX_ROUNDS)
         {
-    //      game_over();
+          // game_over();
           permission = 1;
-	  who_am_i = 1;
+          who_am_i = 1;
           state = 0;
         }
+
       break;
 
       case 2:     //in game as viewer

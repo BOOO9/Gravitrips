@@ -19,7 +19,7 @@
 #define ROWS 6
 #define COLS 7
 #define MAX_ROUNDS 3 //defines rounds to play till win
-#define STATE 3 //State-row tells which player is allowed to play
+#define PERMISSION 3 //State-row tells which player is allowed to play
 
 typedef struct
 {
@@ -63,7 +63,7 @@ int users_in_room[MAX_GAMEROOM];
 	last col 	row 0 = cur_round
 			row 1 = victorys player X
 			row 2 = victorys player O
-			row 3 = STATE = which player can play (1= Player 1/2 = Player 2) start value = 1;
+			row 3 = PERMISSION = which player can play (1= Player 1/2 = Player 2) start value = 1;
 
 			more to come äääh 
 */
@@ -103,7 +103,7 @@ int main(int argc, char **argv)
   for(int i = 0; i < MAX_GAMEROOM; i++)
   {
     clear_gameboard(i, ROWS, COLS+1);
-    gameroom[i].gameboard[STATE][COLS] = 1;
+    gameroom[i].gameboard[PERMISSION][COLS] = 1;
     users_in_room[i] = 0;
   }
   
@@ -137,8 +137,8 @@ void setToken(char col[], int room_nmbr, int player)
   printf("FIELD int: %d player_nbr: %d\n", set, players[room_nmbr].player_nmbr);
 
 	// switches the state of the player who is allowed to play
-	if(gameroom[room_nmbr].gameboard[STATE][COLS] == 1) gameroom[room_nmbr].gameboard[STATE][COLS] = 2;
-	else if(gameroom[room_nmbr].gameboard[STATE][COLS] == 2) gameroom[room_nmbr].gameboard[STATE][COLS] = 1;
+	if(gameroom[room_nmbr].gameboard[PERMISSION][COLS] == 1) gameroom[room_nmbr].gameboard[PERMISSION][COLS] = 2;
+	else if(gameroom[room_nmbr].gameboard[PERMISSION][COLS] == 2) gameroom[room_nmbr].gameboard[PERMISSION][COLS] = 1;
 
 
 
@@ -271,6 +271,7 @@ void *handle_client(void *arg)
         else if (atoi(message) == 0)
         {
           players[cur].room = 0;
+          users_in_room[cur_room]--;
           break;
         }
 
@@ -310,8 +311,8 @@ void *handle_client(void *arg)
       
       if(players[cur].room > 0)
       {
-        clear_gameboard(cur_room, ROWS, COLS+1);
-        gameroom[cur_room].gameboard[STATE][COLS] = 1;
+        clear_gameboard(cur_room, ROWS, COLS + 1);
+        gameroom[cur_room].gameboard[PERMISSION][COLS] = 1;
         players[cur].room = 0; //player is in no room, send him room options
         cur_round = 0;
         users_in_room[cur_room] = 0;
