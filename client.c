@@ -146,6 +146,7 @@ void *send_mesg(void *arg)
 
 printf("\nSTATE = %d\n\n", state);
 
+    //sleep(1);
     switch(state)
     {
       case 0:      //in menu
@@ -157,7 +158,7 @@ printf("\nSTATE = %d\n\n", state);
         {
           fputs(buffer, server_sockfile);
           fflush(server_sockfile);
-//          printf("\nwrote to server: %s\n", buffer);
+          printf("\nwrote to server: %s\n", buffer);
 
           if(users_in_room[input] >= 2)
           {
@@ -172,7 +173,7 @@ printf("\nSTATE = %d\n\n", state);
 
       case 1:       //in room as player
         fgets(buffer, BUF, stdin);
-        if(permission != who_am_i)
+        if(permission != who_am_i) 
         {
           printf("It's not your turn, pleas wait for your opponnent to play!\n");
           break;
@@ -224,14 +225,11 @@ void *recive_mesg(void* arg)
     switch(state)
     {
       case 0:     //user is in menu
-
-        fread(users_in_room, sizeof(int), sizeof(users_in_room), server_sockfile);
-
-
         menu(server_sockfile);
         fscanf(server_sockfile, "%d", &who_am_i); // tells if client is player 1/2 or viewer > 2
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
+//        printf("you are a player\n");
         printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n!", who_am_i, permission); 
       break;
 
@@ -242,9 +240,7 @@ void *recive_mesg(void* arg)
         printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n!", who_am_i, permission); 
 	if(board[1][COLS]+board[2][COLS] == MAX_ROUNDS)
         {
-    //      game_over();
-          permission = 1;
-	  who_am_i = 1;
+          game_over();
           state = 0;
         }
       break;
@@ -282,7 +278,8 @@ int check_userinput(int low, int high, char* user_input)
 void game_over()
 {
   printf("\e[1;1H\e[2J");
-  printf("GAME OVER, Press 0 to continue");
+  printf("GAME OVER\n\n");
+  printf("Press 0 to continue");
 }
 
 
@@ -291,6 +288,10 @@ void menu(FILE* server_sockfile)
 
   printf("\e[1;1H\e[2J");
   printf("---- Menu ---- \n");
+
+
+  fread(users_in_room, sizeof(int), MAX_GAMEROOM, server_sockfile);
+
 
   for(int i = 1; i < MAX_GAMEROOM; i++)
   {
@@ -308,7 +309,7 @@ void printBoard(int board[ROWS][COLS+1])
 
   printf("\e[1;1H\e[2J");
 
-printf(" \t  ");
+  printf("\t  ");
 
   for(i = 1; i <= COLS; i++)
     printf("|%d", i);
