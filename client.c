@@ -137,7 +137,7 @@ void *send_mesg(void *arg)
   FILE *server_sockfile = fdopen(server_sockfd, "r+");
 
   char buffer[100];
-//  char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
+  //  char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
   int input;
 
   sleep(1);
@@ -145,11 +145,12 @@ void *send_mesg(void *arg)
   while(1)
   {
 
-// pthread_mutex_lock(&client_mutex);
+  // pthread_mutex_lock(&client_mutex);
 
     switch(state)
     {
       case 0:      //in menu
+        
         fgets(buffer, BUF, stdin);
 
         input = check_userinput(1, MAX_GAMEROOM, buffer);
@@ -169,16 +170,20 @@ void *send_mesg(void *arg)
             state = 1;
           }
         }
+
+        //TODO better solution for sleep(1)
+        sleep(1);
+
         break;
 
       case 1:       //in room as player
-	
-	if(board[1][COLS]+board[2][COLS] == board[4][COLS]) break;
+
+        if((board[1][COLS] + board[2][COLS]) == (board[4][COLS])) break;
 
         fgets(buffer, BUF, stdin);
 
-
         permission = board[3][COLS];  //tells who has the permission to play
+        
         if(permission != who_am_i)
         {
           printf("It's not your turn, please wait for your opponnent to play!\n");
@@ -186,10 +191,12 @@ void *send_mesg(void *arg)
         }
 
         input = check_userinput(1, COLS, buffer);
-        printf("GNU out of if");
+        
+        
+
         if(input > 0 && (board[1][COLS]+board[2][COLS]) < board[4][COLS])
         {
-          printf("i am in if send to server");
+          printf("i am in if send to server\n\n");
           fputs(buffer, server_sockfile);
           fflush(server_sockfile);
           printf("\nWrote to server: %s\n", buffer);
@@ -198,25 +205,26 @@ void *send_mesg(void *arg)
 
       case 2:     //in room as a viewer
         fgets(buffer, BUF, stdin);
-//        input = check_userinput(0, 0, buffer);
+  //        input = check_userinput(0, 0, buffer);
 
-//        if(input == 0) state = 0;
+  //        if(input == 0) state = 0;
 
-//        fputs(buffer, server_sockfile);
-//        fflush(server_sockfile);
+  //        fputs(buffer, server_sockfile);
+  //        fflush(server_sockfile);
         
         break;
     }
 
-//pthread_mutex_unlock(&client_mutex);
+  //pthread_mutex_unlock(&client_mutex);
     if(strcmp(buffer, "quit\n") == 0) break;
-    if(board[1][COLS]+board[2][COLS] == board[4][COLS])break;
+
+    if(board[1][COLS] + board[2][COLS] == board[4][COLS]) break;
 
   }
 
 
   run = 0;
-//  fclose(server_sockfile);
+  //  fclose(server_sockfile);
 
   return 0;
 }
@@ -228,7 +236,7 @@ void *recive_mesg(void* arg)
   FILE *server_sockfile = fdopen(server_sockfd, "r+");
 
   char buffer[100];
-//  char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
+  //  char *message; // = fgets(buffer, sizeof(buffer), server_sockfile);
 
 
   //fread(board, sizeof(char), sizeof(board), server_sockfile);
@@ -236,7 +244,7 @@ void *recive_mesg(void* arg)
   while(1)
   {
 
-//    pthread_mutex_lock(&client_mutex);
+  //    pthread_mutex_lock(&client_mutex);
 
 
     switch(state) {
@@ -248,41 +256,46 @@ void *recive_mesg(void* arg)
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
         printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
+        printf("state = %d\n\n", state);
+        state = 1;
+
       break;
 
       case 1:     //in game as player
+          
+
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
         permission = board[3][COLS];  //tells who has the permission to play
         printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
-	if(board[1][COLS]+board[2][COLS] == board[4][COLS])
+        
+        if(board[1][COLS]+board[2][COLS] == board[4][COLS])
         {
           printf("game over");
           fgets(buffer, BUF, stdin);
 
           goto end;
 
-    //      game_over();
-    //      permission = 1;
-//	  who_am_i = 1;
- //         state = 0;
         }
+
       break;
 
       case 2:     //in game as viewer
+
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
         printf("you are a spectator\n\n");
-	if(board[1][COLS]+board[2][COLS] == board[4][COLS])
+        if(board[1][COLS]+board[2][COLS] == board[4][COLS])
         {
           printf("game over");
           fgets(buffer, BUF, stdin);
 
           goto end;
         }
+
         break;
     }
-//pthread_mutex_unlock(&client_mutex);
+  //pthread_mutex_unlock(&client_mutex);
 
   }
   end:
@@ -311,7 +324,7 @@ int check_userinput(int low, int high, char* user_input)
 
 void game_over()
 {
-//  system("cls");
+  //  system("cls");
 
   printf("GAME OVER, Press 0 to continue");
 }
@@ -320,8 +333,8 @@ void game_over()
 void menu(FILE* server_sockfile)
 {
 
-//  system("cls");
-//  printf("\e[1;1H\e[2J");
+  //  system("cls");
+  //  printf("\e[1;1H\e[2J");
 
   printf("---- Menu ---- \n");
 
@@ -339,8 +352,8 @@ void printBoard(int board[ROWS][COLS+1])
   int i = 0;
   int j = 0;
 
-//  printf("\e[1;1H\e[2J");
-//  system("cls");
+  //  printf("\e[1;1H\e[2J");
+  //  system("cls");
 
   printf(" \t  ");
 
