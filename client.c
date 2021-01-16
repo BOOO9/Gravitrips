@@ -19,7 +19,6 @@
 #define BUF 1024
 #define ROWS 6
 #define COLS 7
-#define MAX_ROUNDS 3
 #define INDENT "    "
 
 pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -57,7 +56,7 @@ int main(int argc, char **argv) //TODO start_server funciton um die main kürzer
     usage();
   }
 
-  int port = atoi(argv[1]); 
+  int port = atoi(argv[1]);
 
   int server_sockfd = start_server(port);
 
@@ -174,7 +173,7 @@ void *send_mesg(void *arg)
 
       case 1:       //in room as player
 	
-	if(board[1][COLS]+board[2][COLS] == MAX_ROUNDS) break;
+	if(board[1][COLS]+board[2][COLS] == board[4][COLS]) break;
 
         fgets(buffer, BUF, stdin);
 
@@ -188,7 +187,7 @@ void *send_mesg(void *arg)
 
         input = check_userinput(1, COLS, buffer);
 
-        if(input > 0 && board[1][COLS]+board[2][COLS] < MAX_ROUNDS)
+        if(input > 0 && board[1][COLS]+board[2][COLS] < board[4][COLS])
         {
           fputs(buffer, server_sockfile);
           fflush(server_sockfile);
@@ -198,9 +197,9 @@ void *send_mesg(void *arg)
 
       case 2:     //in room as a viewer
         fgets(buffer, BUF, stdin);
-        input = check_userinput(0, 0, buffer);
-        
-        if(input == 0) state = 0;
+//        input = check_userinput(0, 0, buffer);
+
+//        if(input == 0) state = 0;
 
 //        fputs(buffer, server_sockfile);
 //        fflush(server_sockfile);
@@ -210,7 +209,7 @@ void *send_mesg(void *arg)
 
 //pthread_mutex_unlock(&client_mutex);
     if(strcmp(buffer, "quit\n") == 0) break;
-    if(board[1][COLS]+board[2][COLS] == MAX_ROUNDS)break;
+    if(board[1][COLS]+board[2][COLS] == board[4][COLS])break;
 
   }
 
@@ -255,12 +254,13 @@ void *recive_mesg(void* arg)
         printBoard(board);
         permission = board[3][COLS];  //tells who has the permission to play
         printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
-	if(board[1][COLS]+board[2][COLS] == MAX_ROUNDS)
+	if(board[1][COLS]+board[2][COLS] == board[4][COLS])
         {
           printf("game over");
           fgets(buffer, BUF, stdin);
 
           goto end;
+
     //      game_over();
     //      permission = 1;
 //	  who_am_i = 1;
@@ -271,7 +271,14 @@ void *recive_mesg(void* arg)
       case 2:     //in game as viewer
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
-        printf("you are a spectator, press 0 to leave\n\n");
+        printf("you are a spectator\n\n");
+	if(board[1][COLS]+board[2][COLS] == board[4][COLS])
+        {
+          printf("game over");
+          fgets(buffer, BUF, stdin);
+
+          goto end;
+        }
         break;
     }
 //pthread_mutex_unlock(&client_mutex);
@@ -281,6 +288,8 @@ void *recive_mesg(void* arg)
   run = 0;
 
   fclose(server_sockfile);
+
+  return 0;
 }
 
 

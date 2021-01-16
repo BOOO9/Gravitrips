@@ -18,7 +18,6 @@
 #define MAX_GAMEROOM 6 //gameroomm 0 = menue
 #define ROWS 6
 #define COLS 7
-#define MAX_ROUNDS 3 //defines rounds to play till win
 #define STATE 3 //State-row tells which player is allowed to play
 
 typedef struct
@@ -63,8 +62,8 @@ int users_in_room[MAX_GAMEROOM];
 	last col 	row 0 = cur_round
 			row 1 = victorys player X
 			row 2 = victorys player O
-			row 3 = STATE = which player can play (1= Player 1/2 = Player 2) start value = 1;
-
+			row 3 = permission = which player can play (1= Player 1/2 = Player 2) start value = 1;
+			row 4 = max rounds
 			more to come äääh 
 */
 
@@ -72,6 +71,7 @@ int users_in_room[MAX_GAMEROOM];
 //TODO
 pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+int max_rounds; //defines rounds to play till win
 
 char *progname;
 int user_count;
@@ -109,10 +109,10 @@ int main(int argc, char **argv)
   
   user_count = 0;
   progname = argv[0];
-  if (argc < 2) usage();
+  if (argc < 3) usage();
 
   int port = atoi(argv[1]);
-
+  max_rounds = atoi(argv[2]);
   if (port == 0) usage();
 
   start_server(port);
@@ -176,7 +176,7 @@ void error_exit(const char *msg)
 
 void usage()
 {
-  fprintf(stderr, "Usage: %s port\n", progname);
+  fprintf(stderr, "Usage: %s port number of games\n", progname);
   exit(EXIT_FAILURE);
 }
 
@@ -240,7 +240,7 @@ void *handle_client(void *arg)
       players[cur].room = cur_room;
       users_in_room[cur_room]++;
       players[cur].player_room = users_in_room[cur_room];
-
+      gameroom[cur_room].gameboard[4][COLS] = max_rounds;
 
 
       //gives the client his player number
@@ -253,7 +253,7 @@ void *handle_client(void *arg)
     {
 
 
-      while(cur_round < MAX_ROUNDS) //play three rounds, until game is over
+      while(cur_round < max_rounds) //play three rounds, until game is over
       {
 
 
@@ -377,20 +377,24 @@ int start_server(int port)
 
   while (user_count < MAX_USER)
   {
-
-    client_sockfd = accept(server_sockfd, (struct sockaddr *)&address, &addrlen);
-
-    if (client_sockfd > 0)
+    if(user_count < MAX_USER)
     {
-      printf("Connection (%s) established\n", inet_ntoa(address.sin_addr));
+      client_sockfd = accept(server_sockfd, (struct sockaddr *)&address, &addrlen);
 
-      user_count++;
+      if (client_sockfd > 0)
+      {
+        printf("Connection (%s) established\n", inet_ntoa(address.sin_addr));
 
-      if (pthread_create(&thread_id, NULL, handle_client, (void *)&client_sockfd) < 0)   
-          error_exit("pthread_create failed");
+        user_count++;
 
+        if (pthread_create(&thread_id, NULL, handle_client, (void *)&client_sockfd) < 0)   
+            error_exit("pthread_create failed");
+
+      }
+      else error_exit("accept client");      // TODO
+    }else{
+      printf("FULL");
     }
-    else error_exit("accept client");      // TODO
 
   sleep(1);
   }
