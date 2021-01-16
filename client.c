@@ -334,7 +334,7 @@ void menu(FILE* server_sockfile)
 {
 
   //  system("cls");
-  //  printf("\e[1;1H\e[2J");
+  printf("\e[1;1H\e[2J");
 
   printf("---- Menu ---- \n");
 
@@ -352,8 +352,8 @@ void printBoard(int board[ROWS][COLS+1])
   int i = 0;
   int j = 0;
 
-  //  printf("\e[1;1H\e[2J");
-  //  system("cls");
+  printf("\e[1;1H\e[2J");
+
 
   printf(" \t  ");
 
@@ -380,16 +380,6 @@ void printBoard(int board[ROWS][COLS+1])
 
 
 
-/*
-void get_user_input_to_server(char* buffer, FILE* server_sockfile)
-{
-  fgets(buffer, BUF, stdin);
-  fputs(buffer, server_sockfile);
-  fflush(server_sockfile);
-  printf("\nwrote to server: %s\n", buffer);
-}
-
-*/
 
 
 
