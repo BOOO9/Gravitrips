@@ -30,7 +30,7 @@ typedef struct
 
 }player_t;
 
-player_t players[MAX_USER];
+player_t players[MAX_USER+1];
 
 char symbols[] = {' ', 'X', 'O', '4'};
 /* Symbols:
@@ -94,7 +94,7 @@ void send_board_to_user(int cur_room);
 int main(int argc, char **argv)
 {
 
-  for(int i = 0; i <= MAX_USER; i++)
+  for(int i = 0; i <= MAX_USER+1; i++)
   {
     players[i].player_nmbr = -1;
     players[i].room = 0;
@@ -195,7 +195,7 @@ void *handle_client(void *arg)
   int player_gone;
 
   //assigns to current user a sockfd
-  for(int i = 1; i < MAX_USER; i++)
+  for(int i = 1; i < MAX_USER+1; i++)
   {
     if(players[i].player_nmbr < 0)
     {
@@ -392,25 +392,27 @@ int start_server(int port)
 
   while(1)
   {
-    if(user_count < MAX_USER)
-    {
       client_sockfd = accept(server_sockfd, (struct sockaddr *)&address, &addrlen);
 
       if (client_sockfd > 0)
       {
-        printf("Connection (%s) established\n", inet_ntoa(address.sin_addr));
-
         user_count++;
+
+        if(user_count < MAX_USER+1) printf("Connection (%s) established\n", inet_ntoa(address.sin_addr));
 
         if (pthread_create(&thread_id, NULL, handle_client, (void *)&client_sockfd) < 0)   
             error_exit("pthread_create failed");
 
       }else error_exit("accept client");      // TODO
-    }else{
-      printf("FULL");
-    }
 
-  sleep(1);
+      if(user_count > MAX_USER)
+      {
+        printf("\n\nSERVER IS FULL\n\n");
+        close(client_sockfd);
+        user_count--;
+      }
+
+      sleep(1);
   }
   close(server_sockfd);
 
