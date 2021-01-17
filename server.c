@@ -231,8 +231,7 @@ void *handle_client(void *arg)
         printf("disconnect user %d\n", players[cur].player_nmbr);
         goto player_left;
       }
-      if(strcmp(buffer, "quit\n") == 0) goto player_left;
-
+      
       cur_room = atoi(message);
       players[cur].room = cur_room;
       users_in_room[cur_room]++;
@@ -269,13 +268,13 @@ void *handle_client(void *arg)
           goto player_left;
         }
 
-        else if (atoi(message) == 0)
+        if(atoi(message) == -1)
         {
-          players[cur].room = 0;
-          break;
+          printf("debugg printf timeout\n");
+          gameroom[cur_room].gameboard[0][COLS] = -2;
+          player_gone = 1;
+          goto player_left;
         }
-
-        if(strcmp(buffer, "quit\n") == 0) break;
 
         //sets the token of the player in the appropriate gameboard field
         setToken(message, cur_room, players[cur].player_room);

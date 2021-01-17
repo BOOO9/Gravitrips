@@ -10,6 +10,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <semaphore.h> 
+#include <sys/time.h>
 
 
 
@@ -20,6 +22,7 @@
 #define ROWS 6
 #define COLS 7
 #define INDENT "    "
+#define max_time2think 7
 
 pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -30,6 +33,8 @@ int permission = 1;         //defines whose turn it is to play; 1 = player 1, 2 
 int who_am_i = 0;
 char *progname;
 char *ip_adress;
+
+sem_t mutex;
 
 char symbols[] = {' ', 'X', 'O', '4'};
 
@@ -58,13 +63,18 @@ int main(int argc, char **argv) //TODO start_server funciton um die main kürzer
   {
     port = atoi(argv[1]);
     ip_adress = "127.0.0.1";
-  }else{
+  }
+
+  else
+  {
     ip_adress = argv[1];
     port = atoi(argv[2]);
   }
 
 
   int server_sockfd = start_server(port);
+  
+  sem_init(&mutex, 0, 1);
 
   pthread_t thread_recive_mesg;
 
@@ -137,8 +147,24 @@ void *send_mesg(void *arg)
 
   FILE *server_sockfile = fdopen(server_sockfd, "r+");
 
-  char buffer[100];
+  char buffer[20];
   int input;
+
+ //for timeout:
+
+  fd_set          input_set;
+  struct timeval  timeout;
+  int             ready_for_reading = 0;
+
+  FD_ZERO(&input_set );
+
+  FD_SET(0, &input_set);
+
+
+  timeout.tv_sec = max_time2think;    // max_time2think seconds
+  timeout.tv_usec = 0;    // 0 milliseconds
+
+  //<for timeout
 
   sleep(1);
 
@@ -172,43 +198,80 @@ void *send_mesg(void *arg)
         break;
 
       case 1:       //in room as player
-        fgets(buffer, BUF, stdin);
+
+        sem_wait(&mutex);
 
         if(board[1][COLS] + board[2][COLS] == board[4][COLS] || board[0][COLS] == -1) goto ends;
 
-
-        permission = board[3][COLS];  //tells who has the permission to play
-
-        if(permission != who_am_i)
+        do
         {
-          printf("It's not your turn, please wait for your opponnent to play!\n");
-          break;
-        }
+  
+          // select() = 0 when time is over, 1 = when input succesfully taken 
+          ready_for_reading = select(1, &input_set, NULL, NULL, &timeout);
 
-        input = check_userinput(1, COLS, buffer);
+          if (ready_for_reading == -1) 
+          {
+            printf("Unable to read your input\n");
+            goto ends;
+          } 
+
+          if (ready_for_reading == 1) 
+          {
+            read(0, buffer, 19);
+          } 
+
+          else if(ready_for_reading == 0)
+          {
+            if(permission == who_am_i) printf("\nYou needed too much time! :(\nYou lost!\n***GAME OVER***\n");
+
+            else if(permission != who_am_i) printf("Your opponnent needed too much time!\nYou won!\n***GAME OVER***\n");
+            
+            char new_buffer[7] = "-1";
+            printf("timeout == %s\n", new_buffer);
+            fputs(new_buffer, server_sockfile);
+            fflush(server_sockfile);
+
+            printf("Press SOMETHING YOU HUMAN BEING\n\n"); //TODO
+            goto ends;
+          }
+          
+          if(permission != who_am_i)
+          {
+            printf("It's not your turn, please wait for your opponnent to play!\n");
+            break;
+          }
+
+          input = check_userinput(1, COLS, buffer);
+        
+        }while (input <= 0);
 
         if(input > 0 && (board[1][COLS]+board[2][COLS]) < board[4][COLS])
         {
           fputs(buffer, server_sockfile);
           fflush(server_sockfile);
+          printf("Input was sent to server!\n");
         }
+
+        timeout.tv_sec = max_time2think;
+
         break;
 
       case 2:     //in room as a viewer
+        
         fgets(buffer, BUF, stdin);
         if(board[1][COLS] + board[2][COLS] == board[4][COLS] || board[0][COLS] == -1) goto ends;
+        
         break;
     }
-
-    if(strcmp(buffer, "quit\n") == 0) break;
-
-//    if(board[1][COLS] + board[2][COLS] == board[4][COLS]) break;
 
   }
 
   ends:
 
+  printf("END--Tests--END\n");
+
   fclose(server_sockfile);
+  sem_post(&mutex);
 
   return 0;
 }
@@ -233,12 +296,19 @@ void *recive_mesg(void* arg)
 
         if(who_am_i < 3)
         {
-          printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
+
+          if(who_am_i == permission) printf("Please type in the column you want to play: \n");
+          else if(who_am_i != permission) printf("Please wait for the your opponnent to play!\n");
+
           state = 1;
-        }else{
+
+        }
+        else
+        {
           printf("you are a spectator\n\n");
           state = 2;
         }
+
       break;
 
       case 1:     //in game as player
@@ -247,21 +317,38 @@ void *recive_mesg(void* arg)
         printBoard(board);
         permission = board[3][COLS];  //tells who has the permission to play
 
+        //abort condition ronuds are over
         if(board[1][COLS]+board[2][COLS] == board[4][COLS])
         {
           printf("\n***GAME OVER***\n");
-          printf("Press Enter to leave\n\n");
-          goto end;
-        }
-        if(board[0][COLS] == -1)
-        {
-          printf("\n***GAME OVER***\n");
-          printf("\nYour opponend is gay and left, you win\n\n");
-          printf("Press Enter to leave\n\n");
           goto end;
         }
 
-        printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
+        //abort condition Player left with Ctrl-C
+        if(board[0][COLS] == -1)
+        {
+          printf("\n***GAME OVER***\n");
+          printf("\nYour opponnent is salty and left, you win\n\n");
+          goto end;
+        }
+
+        //abort condition timeout from player
+        if(board[0][COLS] == -2)
+        {
+          printf("\n***GAME OVER***\n");
+          printf("\nYour opponnent timeout!!!!!!!!!!!!!!!!!!!!!!\n\n");
+          goto end;
+        }
+
+
+        if(who_am_i == permission) 
+        {
+          printf("Please type in the column you want to play: \n");
+          sem_post(&mutex);
+        }
+
+        else if(who_am_i != permission) printf("Please wait for the your opponnent to play!\n");
+        
 
       break;
 
@@ -270,17 +357,17 @@ void *recive_mesg(void* arg)
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
         printf("you are a spectator\n\n");
+
         if(board[1][COLS]+board[2][COLS] == board[4][COLS])
         {
           printf("\n***GAME OVER***\n");
-          printf("Press Enter to leave\n\n");
           goto end;
         }
+
         if(board[0][COLS] == -1)
         {
           printf("\n***GAME OVER***\n");
           printf("\nA player left\n\n");
-          printf("Press Enter to leave\n\n");
           goto end;
         }
 
@@ -290,6 +377,7 @@ void *recive_mesg(void* arg)
   end:
 
   fclose(server_sockfile);
+  sem_post(&mutex);
 
   return 0;
 }
@@ -317,7 +405,7 @@ int check_userinput(int low, int high, char* user_input)
 void menu(FILE* server_sockfile)
 {
 
-  system("clear");
+  //system("clear");
 //  printf("\e[1;1H\e[2J");
 
   printf("---- Menu ---- \n");
@@ -337,7 +425,7 @@ void printBoard(int board[ROWS][COLS+1])
   int j = 0;
 
 //  printf("\e[1;1H\e[2J");
-  system("clear");
+  //system("clear");
 
 
   printf(" \t  ");
