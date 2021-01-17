@@ -73,6 +73,7 @@ pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int max_rounds; //defines rounds to play till win
 
+
 char *progname;
 int user_count;
 
@@ -186,7 +187,6 @@ void *handle_client(void *arg)
 {
   int sockfd = *((int *)arg);
 
-  int cur_round = 0;
   int cur;
   int cur_room = 0;
   int winner = 0;
@@ -247,11 +247,11 @@ void *handle_client(void *arg)
     else //player is in room, send board
     {
 
-
-      while(cur_round < max_rounds) //play three rounds, until game is over
+//      int cur_round = 0;
+      while(gameroom[cur_room].gameboard[0][COLS] < max_rounds) //play three rounds, until game is over
       {
 
-        printf("in round loop");
+        printf("round %d of %d\n\n", gameroom[cur_room].gameboard[0][COLS], max_rounds);
         send_board_to_user(cur_room);
 
         message = fgets(buffer, sizeof(buffer), client_sockfile);
@@ -279,14 +279,14 @@ void *handle_client(void *arg)
         //serches for 4 tokens in a row, changes the four row to the number '4' and returns the number of the winning player
         winner = search_4_four(cur_room, players[cur].player_room);
 
-        if(winner > 0) gameroom[cur_room].gameboard[winner][COLS]++;
-
-        send_board_to_user(cur_room);
 
         if(winner > 0)
         {
-          cur_round++;
-          gameroom[cur_room].gameboard[0][COLS] = cur_round;
+          gameroom[cur_room].gameboard[winner][COLS]++;
+
+          send_board_to_user(cur_room);
+
+          gameroom[cur_room].gameboard[0][COLS]++;
 
           printf("\n\n!!! We have a winner for the round: Player %d (%c)\n !!!", winner, symbols[winner]);
 
@@ -310,7 +310,7 @@ void *handle_client(void *arg)
         clear_gameboard(cur_room, ROWS, COLS+1);
         gameroom[cur_room].gameboard[STATE][COLS] = 1;
         players[cur].room = 0; //player is in no room, send him room options
-        cur_round = 0;
+        gameroom[cur_room].gameboard[0][COLS] = 0;
         users_in_room[cur_room] = 0;
       }
       goto client_left;
@@ -327,7 +327,7 @@ void *handle_client(void *arg)
 
 
   players[cur].room = 0; //player is in no room, send him room options
-  cur_round = 0;
+  gameroom[cur_room].gameboard[0][COLS] = 0;
   users_in_room[cur_room]--;
 
   printf("someone left\n");

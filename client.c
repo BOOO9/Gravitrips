@@ -156,7 +156,7 @@ void *send_mesg(void *arg)
         {
           fputs(buffer, server_sockfile);
           fflush(server_sockfile);
-          if(users_in_room[input] >= 2)
+          if(who_am_i >= 2)
           {
             state = 2;
           }
