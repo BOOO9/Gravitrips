@@ -192,6 +192,8 @@ void *handle_client(void *arg)
   int winner = 0;
 
 
+  int player_gone;
+
   //assigns to current user a sockfd
   for(int i = 1; i < MAX_USER; i++)
   {
@@ -227,9 +229,9 @@ void *handle_client(void *arg)
       {
         printf("userinputt NULL\n");
         printf("disconnect user %d\n", players[cur].player_nmbr);
-        goto client_left;
+        goto player_left;
       }
-      if(strcmp(buffer, "quit\n") == 0) goto client_left;
+      if(strcmp(buffer, "quit\n") == 0) goto player_left;
 
       cur_room = atoi(message);
       players[cur].room = cur_room;
@@ -247,7 +249,6 @@ void *handle_client(void *arg)
     else //player is in room, send board
     {
 
-//      int cur_round = 0;
       while(gameroom[cur_room].gameboard[0][COLS] < max_rounds) //play three rounds, until game is over
       {
 
@@ -260,9 +261,12 @@ void *handle_client(void *arg)
         {
           printf("userinputt NULL\n");
           printf("disconnect user %d\n", players[cur].player_nmbr);
+
+          if(players[cur].player_room > 2) goto spectator_left;
+
           gameroom[cur_room].gameboard[0][COLS] = -1;
-          send_board_to_user(cur_room);
-          goto client_left;
+          player_gone = 1;
+          goto player_left;
         }
 
         else if (atoi(message) == 0)
@@ -298,12 +302,13 @@ void *handle_client(void *arg)
           {
             printf("userinputt NULL\n");
             printf("disconnect user %d\n", players[cur].player_nmbr);
-            goto client_left;
+            goto player_left;
           }
           winner = 0;
         }
 
       }//while round loop
+
 
       if(players[cur].room > 0)
       {
@@ -313,27 +318,40 @@ void *handle_client(void *arg)
         gameroom[cur_room].gameboard[0][COLS] = 0;
         users_in_room[cur_room] = 0;
       }
-      goto client_left;
+
+      printf("KOMMEN?");
+      goto player_left;
 
     }
 
 
  }
 
-  client_left:
+  player_left:
+
+  players[cur].player_nmbr = -1;
+  players[cur].room = 0; //player is in no room, send him room options
+
+  if(player_gone == 1) send_board_to_user(cur_room);
+
+  player_gone = 0;
 
   clear_gameboard(cur_room, ROWS, COLS+1);
+
   gameroom[cur_room].gameboard[STATE][COLS] = 1;
 
 
+  spectator_left:
+
   players[cur].room = 0; //player is in no room, send him room options
-  gameroom[cur_room].gameboard[0][COLS] = 0;
   users_in_room[cur_room]--;
 
   printf("someone left\n");
   user_count--;
 
   players[cur].player_nmbr = -1;
+
+//  sleep(1);
 
   fclose(players[cur].client_sockfile);
 
@@ -372,7 +390,7 @@ int start_server(int port)
   // TODO
   pthread_t thread_id;
 
-  while (user_count < MAX_USER)
+  while(1)
   {
     if(user_count < MAX_USER)
     {
@@ -387,8 +405,7 @@ int start_server(int port)
         if (pthread_create(&thread_id, NULL, handle_client, (void *)&client_sockfd) < 0)   
             error_exit("pthread_create failed");
 
-      }
-      else error_exit("accept client");      // TODO
+      }else error_exit("accept client");      // TODO
     }else{
       printf("FULL");
     }

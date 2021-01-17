@@ -174,7 +174,8 @@ void *send_mesg(void *arg)
       case 1:       //in room as player
         fgets(buffer, BUF, stdin);
 
-        if(board[1][COLS] + board[2][COLS] == board[4][COLS] || board[0][COLS] == -1) break;
+        if(board[1][COLS] + board[2][COLS] == board[4][COLS] || board[0][COLS] == -1) goto ends;
+
 
         permission = board[3][COLS];  //tells who has the permission to play
 
@@ -194,7 +195,8 @@ void *send_mesg(void *arg)
         break;
 
       case 2:     //in room as a viewer
-        sleep(3); //TODO suabere lösung
+        fgets(buffer, BUF, stdin);
+        if(board[1][COLS] + board[2][COLS] == board[4][COLS] || board[0][COLS] == -1) goto ends;
         break;
     }
 
@@ -204,7 +206,9 @@ void *send_mesg(void *arg)
 
   }
 
-  //  fclose(server_sockfile);
+  ends:
+
+  fclose(server_sockfile);
 
   return 0;
 }
@@ -229,8 +233,12 @@ void *recive_mesg(void* arg)
 
         if(who_am_i < 3)
         {
-        printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
-        }else{printf("you are a spectator\n\n");}
+          printf("I am Nr.: --%d--, and Player --%d-- (Permission) is allowed to play\n\n", who_am_i, permission); 
+          state = 1;
+        }else{
+          printf("you are a spectator\n\n");
+          state = 2;
+        }
       break;
 
       case 1:     //in game as player
@@ -249,6 +257,7 @@ void *recive_mesg(void* arg)
         {
           printf("\n***GAME OVER***\n");
           printf("\nYour opponend is gay and left, you win\n\n");
+          printf("Press Enter to leave\n\n");
           goto end;
         }
 
@@ -261,15 +270,17 @@ void *recive_mesg(void* arg)
         fread(board, sizeof(int), sizeof(board), server_sockfile);
         printBoard(board);
         printf("you are a spectator\n\n");
-        if(board[1][COLS]+board[2][COLS] == board[4][COLS] || board[0][COLS] == -1)
+        if(board[1][COLS]+board[2][COLS] == board[4][COLS])
         {
           printf("\n***GAME OVER***\n");
+          printf("Press Enter to leave\n\n");
           goto end;
         }
-        if(board[1][COLS]+board[2][COLS] == board[4][COLS] || board[0][COLS] == -1)
+        if(board[0][COLS] == -1)
         {
           printf("\n***GAME OVER***\n");
           printf("\nA player left\n\n");
+          printf("Press Enter to leave\n\n");
           goto end;
         }
 
@@ -306,8 +317,8 @@ int check_userinput(int low, int high, char* user_input)
 void menu(FILE* server_sockfile)
 {
 
-  //  system("cls");
-  printf("\e[1;1H\e[2J");
+  system("clear");
+//  printf("\e[1;1H\e[2J");
 
   printf("---- Menu ---- \n");
 
@@ -325,7 +336,8 @@ void printBoard(int board[ROWS][COLS+1])
   int i = 0;
   int j = 0;
 
-  printf("\e[1;1H\e[2J");
+//  printf("\e[1;1H\e[2J");
+  system("clear");
 
 
   printf(" \t  ");
