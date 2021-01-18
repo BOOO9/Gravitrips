@@ -22,7 +22,7 @@
 #define ROWS 6
 #define COLS 7
 #define INDENT "    "
-#define max_time2think 7
+#define max_time2think 4
 
 pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -222,16 +222,13 @@ void *send_mesg(void *arg)
 
           else if(ready_for_reading == 0)
           {
+            
             if(permission == who_am_i) printf("\nYou needed too much time! :(\nYou lost!\n***GAME OVER***\n");
 
-            else if(permission != who_am_i) printf("Your opponnent needed too much time!\nYou won!\n***GAME OVER***\n");
-            
-            char new_buffer[7] = "-1";
-            printf("timeout == %s\n", new_buffer);
-            fputs(new_buffer, server_sockfile);
+            strcpy(buffer, "-1");           
+            fputs(buffer, server_sockfile);
             fflush(server_sockfile);
-
-            printf("Press SOMETHING YOU HUMAN BEING\n\n"); //TODO
+            exit(-1); 
             goto ends;
           }
           
@@ -249,7 +246,6 @@ void *send_mesg(void *arg)
         {
           fputs(buffer, server_sockfile);
           fflush(server_sockfile);
-          printf("Input was sent to server!\n");
         }
 
         timeout.tv_sec = max_time2think;
@@ -267,11 +263,7 @@ void *send_mesg(void *arg)
   }
 
   ends:
-
-  printf("END--Tests--END\n");
-
   fclose(server_sockfile);
-  sem_post(&mutex);
 
   return 0;
 }
@@ -305,7 +297,7 @@ void *recive_mesg(void* arg)
         }
         else
         {
-          printf("you are a spectator\n\n");
+          printf("You are a spectator\n\n");
           state = 2;
         }
 
@@ -328,15 +320,14 @@ void *recive_mesg(void* arg)
         if(board[0][COLS] == -1)
         {
           printf("\n***GAME OVER***\n");
-          printf("\nYour opponnent is salty and left, you win\n\n");
+          printf("\nYour opponnent left, you win! \n\n");
           goto end;
         }
 
-        //abort condition timeout from player
+        //abort condition timeout from other player
         if(board[0][COLS] == -2)
         {
-          printf("\n***GAME OVER***\n");
-          printf("\nYour opponnent timeout!!!!!!!!!!!!!!!!!!!!!!\n\n");
+          printf("Your opponnent needed too much time!\nYou won!\n***GAME OVER***\n");
           goto end;
         }
 
@@ -367,7 +358,14 @@ void *recive_mesg(void* arg)
         if(board[0][COLS] == -1)
         {
           printf("\n***GAME OVER***\n");
-          printf("\nA player left\n\n");
+          printf("\nA player left!\n\n");
+          goto end;
+        }
+
+        if(board[0][COLS] == -2)
+        {
+          printf("\n***GAME OVER***\n");
+          printf("\nA player timed out!\n\n");
           goto end;
         }
 
@@ -405,8 +403,7 @@ int check_userinput(int low, int high, char* user_input)
 void menu(FILE* server_sockfile)
 {
 
-  //system("clear");
-//  printf("\e[1;1H\e[2J");
+  system("clear");
 
   printf("---- Menu ---- \n");
 
@@ -424,8 +421,7 @@ void printBoard(int board[ROWS][COLS+1])
   int i = 0;
   int j = 0;
 
-//  printf("\e[1;1H\e[2J");
-  //system("clear");
+  system("clear");
 
 
   printf(" \t  ");
@@ -442,7 +438,7 @@ void printBoard(int board[ROWS][COLS+1])
 
     for (j = 0; j < COLS; j++) printf("|%c", symbols[board[i][j]]);
 
-    printf("|  INFO %d\n", board[i][COLS]);
+    printf("|\n");
 
   }
 

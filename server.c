@@ -128,14 +128,11 @@ void setToken(char col[], int room_nmbr, int player)
 {
   int row = 0;
 
-  printf("FIELD string: %s\n", col);
-
-
   int set = atoi(col);
   
   set--;
 
-  printf("FIELD int: %d player_nbr: %d\n", set, players[room_nmbr].player_nmbr);
+  printf("Player %d is putting on col %d in Room: --%d--", players[room_nmbr].player_nmbr, set+1, room_nmbr);
 
 	// switches the state of the player who is allowed to play
 	if(gameroom[room_nmbr].gameboard[STATE][COLS] == 1) gameroom[room_nmbr].gameboard[STATE][COLS] = 2;
@@ -154,9 +151,10 @@ void setToken(char col[], int room_nmbr, int player)
 
 
  //DEBUG printf gemeboard:
+  /*
 
-  //  for(int i = 0; i < MAX_GAMEROOM; i++)
-  //  {
+  for(int i = 0; i < MAX_GAMEROOM; i++)
+   {
       for(int j = 0; j < ROWS; j++)
       {
         for(int k = 0; k < COLS+1; k++)
@@ -165,8 +163,10 @@ void setToken(char col[], int room_nmbr, int player)
         }
         printf("\n");
       }
-  //    printf("room %d \n\n", i);
-  //  }
+      printf("room %d \n\n", i);
+    }
+  */
+
 }
 
 void error_exit(const char *msg)
@@ -248,10 +248,9 @@ void *handle_client(void *arg)
     else //player is in room, send board
     {
 
-      while(gameroom[cur_room].gameboard[0][COLS] < max_rounds) //play three rounds, until game is over
+      while(gameroom[cur_room].gameboard[0][COLS] < max_rounds) //play maxrounds, until game is over
       {
 
-        printf("round %d of %d\n\n", gameroom[cur_room].gameboard[0][COLS], max_rounds);
         send_board_to_user(cur_room);
 
         message = fgets(buffer, sizeof(buffer), client_sockfile);
@@ -270,7 +269,6 @@ void *handle_client(void *arg)
 
         if(atoi(message) == -1)
         {
-          printf("debugg printf timeout\n");
           gameroom[cur_room].gameboard[0][COLS] = -2;
           player_gone = 1;
           goto player_left;
@@ -318,7 +316,6 @@ void *handle_client(void *arg)
         users_in_room[cur_room] = 0;
       }
 
-      printf("KOMMEN?");
       goto player_left;
 
     }
@@ -345,7 +342,7 @@ void *handle_client(void *arg)
   players[cur].room = 0; //player is in no room, send him room options
   users_in_room[cur_room]--;
 
-  printf("someone left\n");
+  printf("Someone left the server\n");
   user_count--;
 
   players[cur].player_nmbr = -1;
