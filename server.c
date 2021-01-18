@@ -132,7 +132,7 @@ void setToken(char col[], int room_nmbr, int player)
   
   set--;
 
-  printf("Player %d is putting on col %d in Room: --%d--", players[room_nmbr].player_nmbr, set+1, room_nmbr);
+  printf("Player %d is putting on col %d in Room: --%d--\n", players[room_nmbr].player_nmbr, set+1, room_nmbr);
 
 	// switches the state of the player who is allowed to play
 	if(gameroom[room_nmbr].gameboard[STATE][COLS] == 1) gameroom[room_nmbr].gameboard[STATE][COLS] = 2;

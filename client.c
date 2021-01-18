@@ -376,6 +376,7 @@ void *recive_mesg(void* arg)
 
   fclose(server_sockfile);
   sem_post(&mutex);
+  exit(-1);
 
   return 0;
 }
