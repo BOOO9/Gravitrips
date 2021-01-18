@@ -18,13 +18,10 @@
 /*declaration*/
 
 #define MAX_GAMEROOM 6
-#define BUF 1024
 #define ROWS 6
+#define BUF 1024
 #define COLS 7
-#define INDENT "    "
-#define max_time2think 4
-
-pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
+#define max_time2think 10
 
 int board[ROWS][COLS+1];
 int users_in_room[MAX_GAMEROOM];
@@ -100,7 +97,6 @@ int main(int argc, char **argv) //TODO start_server funciton um die main kürzer
 
 
 /*functions*/
-
 
 void error_exit(const char *msg)
 {
@@ -200,7 +196,7 @@ void *send_mesg(void *arg)
       case 1:       //in room as player
 
         sem_wait(&mutex);
-
+        
         if(board[1][COLS] + board[2][COLS] == board[4][COLS] || board[0][COLS] == -1) goto ends;
 
         do
@@ -225,19 +221,15 @@ void *send_mesg(void *arg)
             
             if(permission == who_am_i) printf("\nYou needed too much time! :(\nYou lost!\n***GAME OVER***\n");
 
-            strcpy(buffer, "-1");           
+            strcpy(buffer, "-1");      
+
             fputs(buffer, server_sockfile);
             fflush(server_sockfile);
+
             exit(-1); 
-            goto ends;
+     
           }
           
-          if(permission != who_am_i)
-          {
-            printf("It's not your turn, please wait for your opponnent to play!\n");
-            break;
-          }
-
           input = check_userinput(1, COLS, buffer);
         
         }while (input <= 0);
@@ -331,17 +323,15 @@ void *recive_mesg(void* arg)
           goto end;
         }
 
-
         if(who_am_i == permission) 
         {
           printf("Please type in the column you want to play: \n");
           sem_post(&mutex);
-        }
+        }  
 
         else if(who_am_i != permission) printf("Please wait for the your opponnent to play!\n");
-        
 
-      break;
+        break;
 
       case 2:     //in game as viewer
 
@@ -381,9 +371,6 @@ void *recive_mesg(void* arg)
   return 0;
 }
 
-
-
-
 int check_userinput(int low, int high, char* user_input)
 {
   int input = atoi(user_input);
@@ -399,8 +386,6 @@ int check_userinput(int low, int high, char* user_input)
   }
 }
 
-
-
 void menu(FILE* server_sockfile)
 {
 
@@ -415,7 +400,6 @@ void menu(FILE* server_sockfile)
 
   printf("\nChoose a room (1 - 5): ");
 }
-
 
 void printBoard(int board[ROWS][COLS+1])
 {

@@ -47,8 +47,11 @@ typedef struct
 
 gameroom_t gameroom[MAX_GAMEROOM];
 
-
+int max_rounds; //defines rounds to play till win
 int users_in_room[MAX_GAMEROOM];
+char *progname;
+int user_count;
+
 
 /* gameroom[x].gameboard[ROWS][COLS]
  *
@@ -56,28 +59,17 @@ int users_in_room[MAX_GAMEROOM];
  *           1 = token Player 1 = 'X'
  *           2 = token Player 2 = 'O'
  *           3 = Four in a row = '4'
-
-	INFO COL = COLS, easy way to send data to client
-
-	last col 	row 0 = cur_round
-			row 1 = victorys player X
-			row 2 = victorys player O
-			row 3 = permission = which player can play (1= Player 1/2 = Player 2) start value = 1;
-			row 4 = max rounds
-			more to come äääh 
-*/
-
-
-//TODO
-pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-int max_rounds; //defines rounds to play till win
+ *
+ * INFO COL = Column 7, easy way to send data to client
+ * 	 row 0 = cur_round
+ *   row 1 = victorys player X
+ *   row 2 = victorys player O
+ *   row 3 = permission = which player can play (1= Player 1/2 = Player 2) start value = 1;
+ *   row 4 = max rounds
+ *
+ */
 
 
-char *progname;
-int user_count;
-
-//XXX
 void clear_gameboard(int nmbr, int rows, int cols);  //nmbr = which board to clear
 void setToken(char col[], int room_nmbr, int player);
 void error_exit(const char *msg);
@@ -139,34 +131,12 @@ void setToken(char col[], int room_nmbr, int player)
 	else if(gameroom[room_nmbr].gameboard[STATE][COLS] == 2) gameroom[room_nmbr].gameboard[STATE][COLS] = 1;
 
 
-
   for(row = 0; row < ROWS; row++)
   {
     if(gameroom[room_nmbr].gameboard[row][set] > 0) break;
   }
 
-	//if(row == 0) printf("row is full");
-
 	gameroom[room_nmbr].gameboard[row - 1][set] = player;
-
-
- //DEBUG printf gemeboard:
-  /*
-
-  for(int i = 0; i < MAX_GAMEROOM; i++)
-   {
-      for(int j = 0; j < ROWS; j++)
-      {
-        for(int k = 0; k < COLS+1; k++)
-        {
-          printf("|%d", gameroom[room_nmbr].gameboard[j][k]);
-        }
-        printf("\n");
-      }
-      printf("room %d \n\n", i);
-    }
-  */
-
 }
 
 void error_exit(const char *msg)
@@ -180,8 +150,6 @@ void usage()
   fprintf(stderr, "Usage: %s port number of games\n", progname);
   exit(EXIT_FAILURE);
 }
-
-
 
 void *handle_client(void *arg)
 {
@@ -347,15 +315,10 @@ void *handle_client(void *arg)
 
   players[cur].player_nmbr = -1;
 
-//  sleep(1);
-
   fclose(players[cur].client_sockfile);
 
   return 0;
 }
-
-
-
 
 int start_server(int port)
 {
@@ -414,11 +377,7 @@ int start_server(int port)
 
 
   return 0;
-
 }
-
-
-
 
 void send_board_to_user(int cur_room)
 {
@@ -432,8 +391,7 @@ void send_board_to_user(int cur_room)
       }
 }
 
-
-
+//the basic idea of this function was taken from: https://trainyourprogrammer.de/c-A30-L1-4-gewinnt-fuer-die-konsole.html
 void mark_four(int room_nbr, int rs, int cs, int dr, int dc)
 {
     int i;
@@ -442,7 +400,7 @@ void mark_four(int room_nbr, int rs, int cs, int dr, int dc)
         gameroom[room_nbr].gameboard[rs+i*dr][cs+i*dc] = 3;
 }
 
-
+//the basic idea of this function was taken from: https://trainyourprogrammer.de/c-A30-L1-4-gewinnt-fuer-die-konsole.html
 int search_4_four(int room_nbr, int player)
 {
     int i, j;
@@ -502,9 +460,6 @@ int search_4_four(int room_nbr, int player)
 
     return 0;
 }
-
-
-
 
 void clear_gameboard(int nmbr, int rows, int cols)
 {
