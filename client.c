@@ -10,7 +10,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <semaphore.h> 
+#include <semaphore.h>
 #include <sys/time.h>
 
 
@@ -41,14 +41,14 @@ void error_exit(const char *msg);
 void usage();
 void *send_mesg(void *arg);
 void *recive_mesg(void* arg);
-void menu(FILE* server_sockfile);   // TODO funciton when Player in menu modz
-void game();    // TODO function when Player in game mode
-int start_server(int port);
+void menu(FILE* server_sockfile);   //funciton when Player is in menue
+void game();    //function when Player in game mode
+int start_server(int port);  //start_server funciton um die main kürzer zu machen
 int check_userinput(int low, int high, char* user_input); //checks if correct input, only for int, needs range, returns input if correct or -1
 
 
 /* main */
-int main(int argc, char **argv) //TODO start_server funciton um die main kürzer zu machen
+int main(int argc, char **argv)
 {
   int port;
 
@@ -70,7 +70,7 @@ int main(int argc, char **argv) //TODO start_server funciton um die main kürzer
 
 
   int server_sockfd = start_server(port);
-  
+
   sem_init(&mutex, 0, 1);
 
   pthread_t thread_recive_mesg;
@@ -160,8 +160,6 @@ void *send_mesg(void *arg)
   timeout.tv_sec = max_time2think;    // max_time2think seconds
   timeout.tv_usec = 0;    // 0 milliseconds
 
-  //<for timeout
-
   sleep(1);
 
   while(1)
@@ -188,7 +186,6 @@ void *send_mesg(void *arg)
           }
         }
 
-        //TODO better solution for sleep(1)
         sleep(1);
 
         break;
@@ -196,12 +193,12 @@ void *send_mesg(void *arg)
       case 1:       //in room as player
 
         sem_wait(&mutex);
-        
+
         if(board[1][COLS] + board[2][COLS] == board[4][COLS] || board[0][COLS] == -1) goto ends;
 
         do
         {
-  
+
           // select() = 0 when time is over, 1 = when input succesfully taken 
           ready_for_reading = select(1, &input_set, NULL, NULL, &timeout);
 
@@ -218,7 +215,7 @@ void *send_mesg(void *arg)
 
           else if(ready_for_reading == 0)
           {
-            
+
             if(permission == who_am_i) printf("\nYou needed too much time! :(\nYou lost!\n***GAME OVER***\n");
 
             strcpy(buffer, "-1");      

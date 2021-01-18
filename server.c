@@ -245,7 +245,7 @@ void *handle_client(void *arg)
         //sets the token of the player in the appropriate gameboard field
         setToken(message, cur_room, players[cur].player_room);
 
-        //serches for 4 tokens in a row, changes the four row to the number '4' and returns the number of the winning player
+        //searches for 4 tokens in a row, changes the four row to the number '4' and returns the number of the winning player
         winner = search_4_four(cur_room, players[cur].player_room);
 
 
@@ -346,7 +346,6 @@ int start_server(int port)
 
   printf("Server is running and waiting...\n");
 
-  // TODO
   pthread_t thread_id;
 
   while(1)
@@ -362,7 +361,8 @@ int start_server(int port)
         if (pthread_create(&thread_id, NULL, handle_client, (void *)&client_sockfd) < 0)   
             error_exit("pthread_create failed");
 
-      }else error_exit("accept client");      // TODO
+      }
+      else error_exit("accept client");
 
       if(user_count > MAX_USER)
       {
